@@ -1,0 +1,24 @@
+{
+	"cSpell.words": [
+		"checkid",
+		"chrono",
+		"codegen",
+		"dotenv",
+		"dotenvy",
+		"Hasher",
+		"iden",
+		"Incapsulating",
+		"jsonwebtoken",
+		"openapi",
+		"rapidoc",
+		"redoc",
+		"reqwest",
+		"sqlx",
+		"STEAMID",
+		"thiserror",
+		"Unblacklist",
+		"unblacklisted",
+		"utoipa"
+	],
+	"todo-tree.tree.showCountsInTree": true
+}

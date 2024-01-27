@@ -1,0 +1,9 @@
+[package]
+name = "entity"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sea-orm = { version = "0.12.10" }
+serde = { version = "1.0.195", features = ["derive"] }
+utoipa = { version = "4.2.0", features = ["axum_extras", "chrono"] }

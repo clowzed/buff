@@ -1,0 +1,34 @@
+use crate::state::AppState;
+use axum::routing::{delete, get, patch, post};
+use std::sync::Arc;
+
+pub mod blacklist;
+pub mod currency;
+pub mod moderators;
+pub mod orders;
+pub mod reviews;
+
+pub fn router() -> axum::Router<Arc<AppState>> {
+    axum::Router::new()
+        .route("/blacklist", get(blacklist::full_blacklist))
+        .route("/blacklist", post(blacklist::blacklist_user))
+        .route("/blacklist", delete(blacklist::unblacklist_user))
+        .route("/review/video", post(reviews::add_video_review))
+        .route("/review/video", delete(reviews::remove_video_review))
+        .route("/moderator", post(moderators::create_moderator))
+        .route("/moderator", delete(moderators::delete_moderator))
+        .route("/moderator", get(moderators::list_moderators))
+        .route("/moderator/orders", get(moderators::list_moderators_orders))
+        .route("/moderator/unassign", patch(moderators::unassign_moderator))
+        .route("/moderator/assign", patch(moderators::assign_moderator))
+        .route("/review", delete(reviews::remove_review))
+        .route("/order/:id/cancel", patch(orders::cancel_order_by_id))
+        .route("/order/:id/success", patch(orders::finish_order_by_id))
+        .route("/order/all-in-period", get(orders::all_in_period))
+        .route("/currency", post(currency::create_currency))
+        .route(
+            "/currency/:id",
+            delete(currency::delete_currency_rate_by_id),
+        )
+        .route("/currency/:id", patch(currency::set_currency_rate_by_id))
+}

@@ -1,0 +1,64 @@
+version: "3"
+
+services:
+  database:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_DB=buff
+      - POSTGRES_USER=buff
+      - POSTGRES_PASSWORD=buff
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buff"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  proxy:
+    image: nginx
+    restart: always
+    environment:
+      - SERVER_PORT=8080
+      - SERVER=server
+      - DOLLAR=$
+    volumes:
+      - ./nginx-templates:/etc/nginx/templates
+    ports:
+      - 443:443
+      - 80:80
+    links:
+      - server
+
+  server:
+    image: clowzed/buff:latest
+    restart: always
+    build: .
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+       - DATABASE_URL=postgresql://buff:buff@database/buff
+       - REDIS_URL=redis://redis:6379
+       - PORT=8080
+       - STATUS_EXPIRATION_SECONDS=30
+       - REALM=http://127.0.0.1
+       - SQLX_LOGGING=true
+       - JWT_SECRET=secret
+
+
+      
+volumes:
+  pgdata:

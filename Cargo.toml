@@ -1,0 +1,55 @@
+[package]
+name = "buff"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7.4", features = ["tracing", "ws"] }
+chrono = { version = "0.4.31", features = ["serde"] }
+dotenvy = "0.15.7"
+envy = "0.4.2"
+jsonwebtoken = "9.2.0"
+redis = { version = "0.24.0", features = ["tokio-comp"] }
+sea-orm = { version = "0.12.10", features = [
+	"sqlx-postgres",
+	"runtime-tokio-rustls",
+	"macros",
+] }
+serde = { version = "1.0.195", features = ["derive"] }
+serde_json = "1.0.111"
+thiserror = "1.0.56"
+tokio = { version = "1.35.1", features = ["full"] }
+toml = "0.8.8"
+tower-http = { version = "0.5.0", features = ["cors"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+migration = { path = "migration" }
+entity = { path = "entity" }
+utoipa = { version = "4.2.0", features = [
+	"axum_extras",
+	"chrono",
+	"preserve_order",
+] }
+utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }
+utoipa-redoc = { version = "3.0.0", features = ["axum"] }
+utoipa-rapidoc = { version = "3.0.0", features = ["axum"] }
+axum-macros = "0.4.1"
+url = { version = "2.5.0", features = ["serde"] }
+reqwest = "0.11.23"
+lazy_static = "1.4.0"
+serde_urlencoded = "0.7.1"
+regex = "1.10.3"
+futures-util = "0.3.30"
+argon2 = { version = "0.5.3", features = ["std"] }
+rand_core = "0.6.4"
+
+
+[workspace]
+members = [".", "entity", "migration"]
+
+[profile.release]
+opt-level = 'z'   # Optimize for size
+lto = true        # Enable link-time optimization
+codegen-units = 1 # Reduce number of codegen units to increase optimizations
+panic = 'abort'   # Abort on panic
+strip = true
