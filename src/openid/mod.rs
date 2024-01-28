@@ -63,8 +63,7 @@ impl SteamOpenId {
             .body(form_str)
             .send()
             .await
-            .unwrap()
-            //.map_err(|_| VerifyError::RequestFailed)?
+            .map_err(|_| VerifyError::RequestFailed)?
             .text()
             .await
             .map_err(|_| VerifyError::BadResponse)?;
