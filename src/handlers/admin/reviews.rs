@@ -7,7 +7,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Form,
+    Json,
 };
 use entity::video_review::Model as VideoReviewModel;
 use sea_orm::TransactionTrait;
@@ -36,7 +36,7 @@ use crate::state::AppState;
 pub async fn add_video_review(
     AdminAuthJWT(user): AdminAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<AddVideoReviewRequest>,
+    Json(payload): Json<AddVideoReviewRequest>,
 ) -> Response {
     let review_to_be_added = AddVideoReviewParameters { url: payload.url };
 
@@ -75,7 +75,7 @@ pub async fn add_video_review(
 pub async fn remove_video_review(
     AdminAuthJWT(user): AdminAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<RemoveVideoReviewRequest>,
+    Json(payload): Json<RemoveVideoReviewRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
@@ -144,7 +144,7 @@ pub struct RemoveReviewRequest {
 pub async fn remove_review(
     AdminAuthJWT(user): AdminAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<RemoveVideoReviewRequest>,
+    Json(payload): Json<RemoveVideoReviewRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => match ReviewsService::remove_review(payload.id, &transaction).await {

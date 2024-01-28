@@ -1,7 +1,7 @@
 use axum::extract::Query;
 use axum::routing::{get, patch};
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
-use axum::{Form, Json, Router};
+use axum::{Json, Router};
 use sea_orm::prelude::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -78,7 +78,7 @@ pub struct EmailForm {
 pub async fn set_email(
     State(app_state): State<Arc<AppState>>,
     AuthJWT(user): AuthJWT,
-    Form(payload): Form<EmailForm>,
+    Json(payload): Json<EmailForm>,
 ) -> axum::response::Response {
     match UsersService::set_email(
         user.steam_id,
@@ -109,7 +109,7 @@ pub async fn set_email(
 pub async fn set_trade_url(
     State(app_state): State<Arc<AppState>>,
     AuthJWT(user): AuthJWT,
-    Form(payload): Form<TradeUrlForm>,
+    Json(payload): Json<TradeUrlForm>,
 ) -> axum::response::Response {
     match UsersService::set_trade_url(user.steam_id, payload.url, app_state.database_connection())
         .await
@@ -122,7 +122,7 @@ pub async fn set_trade_url(
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct TopUser {
     pub steam_id: i64,
-    #[schema(value_type = String)] 
+    #[schema(value_type = String)]
     pub amount: Decimal,
 }
 

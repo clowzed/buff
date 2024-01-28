@@ -1,4 +1,4 @@
-use axum::{extract::State, response::IntoResponse, response::Response, routing::post, Form, Json};
+use axum::{extract::State, response::IntoResponse, response::Response, routing::post, Json};
 use sea_orm::TransactionTrait;
 use utoipa::ToSchema;
 
@@ -44,7 +44,7 @@ pub struct AdminLoginResponse {
 #[tracing::instrument(skip(app_state))]
 pub async fn login(
     State(app_state): State<Arc<AppState>>,
-    Form(admin_or_moderator_credentials): Form<Credentials>,
+    Json(admin_or_moderator_credentials): Json<Credentials>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {

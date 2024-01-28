@@ -6,7 +6,6 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::Form;
 use axum::Json;
 use sea_orm::TransactionTrait;
 use std::sync::Arc;
@@ -32,7 +31,7 @@ use utoipa::ToSchema;
 pub async fn blacklist_user(
     AdminAuthJWT(admin): AdminAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<BlacklistUserRequest>,
+    Json(payload): Json<BlacklistUserRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
@@ -70,7 +69,7 @@ pub async fn blacklist_user(
 pub async fn unblacklist_user(
     AdminAuthJWT(admin): AdminAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<UnblacklistUserRequest>,
+    Json(payload): Json<UnblacklistUserRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {

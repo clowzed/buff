@@ -52,11 +52,11 @@ pub async fn login_link(State(app_state): State<Arc<AppState>>) -> impl IntoResp
 #[tracing::instrument(skip(app_state))]
 pub async fn login(
     State(app_state): State<Arc<AppState>>,
-    Query(form): Query<VerifyForm>,
+    Query(verify): Query<VerifyForm>,
 ) -> Response {
     let steam_id = match app_state
         .steam_openid()
-        .verify(form)
+        .verify(verify)
         .await
         .map_err(Into::<AppError>::into)
     {

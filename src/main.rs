@@ -24,10 +24,14 @@ use crate::handlers::status::users::StatusResponse;
 use crate::handlers::status::users::UserStatus;
 use crate::handlers::user::{Bounds, EmailForm, TopUser, TradeUrlForm, User};
 use config::{Configuration, ConfigurationReader, EnvConfigurationReader};
+use entity::admin::ActiveModel as AdminActiveModel;
+use entity::admin::Column as AdminColumn;
+use entity::admin::Entity as AdminEntity;
+use entity::sea_orm_active_enums::Role;
 use errors::Details;
 use migration::{Migrator, MigratorTrait};
 use openid::VerifyForm;
-use sea_orm::{ConnectOptions, Database};
+use sea_orm::{ColumnTrait, ConnectOptions, Database, EntityTrait, QueryFilter, Set};
 use state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -41,8 +45,6 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().ok();
-
     //* Setting up tracing
     let stdout_log = tracing_subscriber::fmt::layer().pretty();
     let subscriber = tracing_subscriber::Registry::default()
@@ -180,6 +182,29 @@ async fn main() {
         .nest("/user/order", handlers::orders::router())
         .nest("/user", handlers::user::router())
         .nest("/currency", handlers::currency::router());
+
+    let admin_login = "admin";
+    let admin_password = "$argon2id$v=19$m=19456,t=2,p=1$ZKBXQv1LtIbVXKASHcIbYw$MYqUU8AI5K2OWN3b4QdkFP+g3Dh6IDnXo40EvFvYeYQ";
+
+    if AdminEntity::find()
+        .filter(AdminColumn::Login.eq(admin_login))
+        .one(state.database_connection())
+        .await
+        .unwrap()
+        .is_none()
+    {
+        let admin_to_be_inserted = AdminActiveModel {
+            login: Set(admin_login.to_owned()),
+            password: Set(admin_password.to_owned()),
+            role: Set(Role::Admin),
+            ..Default::default()
+        };
+
+        AdminEntity::insert(admin_to_be_inserted)
+            .exec_with_returning(state.database_connection())
+            .await
+            .unwrap();
+    }
 
     let app = axum::Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))

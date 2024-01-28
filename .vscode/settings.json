@@ -3,6 +3,7 @@
 		"checkid",
 		"chrono",
 		"codegen",
+		"datetime",
 		"dotenv",
 		"dotenvy",
 		"Hasher",

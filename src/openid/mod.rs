@@ -19,7 +19,7 @@ impl SteamOpenId {
             .map_err(|_| NewError::BadUrl)?
             .to_string();
 
-        let form = RedirectForm {
+        let json = RedirectForm {
             ns: "http://specs.openid.net/auth/2.0",
             identity: "http://specs.openid.net/auth/2.0/identifier_select",
             claimed_id: "http://specs.openid.net/auth/2.0/identifier_select",
@@ -27,7 +27,7 @@ impl SteamOpenId {
             realm,
             return_to: &return_to,
         };
-        let form_str = serde_urlencoded::to_string(form).map_err(|_| NewError::BadUrl)?;
+        let form_str = serde_urlencoded::to_string(json).map_err(|_| NewError::BadUrl)?;
 
         let mut redirect_url = Url::parse("https://steamcommunity.com/openid/login").unwrap();
         redirect_url.set_query(Some(&form_str));
@@ -42,24 +42,24 @@ impl SteamOpenId {
         &self.redirect_url
     }
 
-    pub async fn verify(&self, mut form: VerifyForm) -> std::result::Result<i64, VerifyError> {
+    pub async fn verify(&self, mut json: VerifyForm) -> std::result::Result<i64, VerifyError> {
         lazy_static! {
             static ref STEAMID_REGEX: Regex =
                 Regex::new("^https://steamcommunity.com/openid/id/([0-9]{17})$").unwrap();
         }
 
-        if form.return_to != self.return_to {
+        if json.return_to != self.return_to {
             return Err(VerifyError::Denied);
         }
 
-        form.mode = "check_authentication".to_owned();
-        let form_str = serde_urlencoded::to_string(&form).map_err(|_| VerifyError::BadQuery)?;
+        json.mode = "check_authentication".to_owned();
+        let form_str = serde_urlencoded::to_string(&json).map_err(|_| VerifyError::BadQuery)?;
 
         let client = reqwest::Client::new();
 
         let response = client
             .post("https://steamcommunity.com/openid/login")
-            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("Content-Type", "application/x-www-Json-urlencoded")
             .body(form_str)
             .send()
             .await
@@ -75,7 +75,7 @@ impl SteamOpenId {
         }
 
         let captures = STEAMID_REGEX
-            .captures(&form.claimed_id)
+            .captures(&json.claimed_id)
             .ok_or(VerifyError::BadQuery)?;
 
         let steamid64_str = captures.get(1).ok_or(VerifyError::BadQuery)?.as_str();

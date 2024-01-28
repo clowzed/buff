@@ -7,7 +7,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Form, Json,
+    Json,
 };
 
 use chrono::NaiveDateTime as DateTime;
@@ -80,7 +80,7 @@ pub async fn all_video_reviews(State(app_state): State<Arc<AppState>>) -> Respon
 pub async fn add_users_review(
     AuthJWT(user): AuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<AddReviewRequest>,
+    Json(payload): Json<AddReviewRequest>,
 ) -> Response {
     let review_to_be_added = AddReviewParameters {
         steam_id: user.steam_id,

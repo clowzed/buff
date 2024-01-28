@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, patch},
-    Form, Json,
+    Json,
 };
 use redis::AsyncCommands;
 use std::sync::Arc;
@@ -72,7 +72,7 @@ pub struct StatusRequest {
 #[tracing::instrument(skip(app_state, payload))]
 pub async fn fetch_status(
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<StatusRequest>,
+    Json(payload): Json<StatusRequest>,
 ) -> Response {
     let mut client = match app_state.redis_client().get_async_connection().await {
         Ok(connection) => connection,

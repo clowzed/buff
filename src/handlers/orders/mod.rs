@@ -12,7 +12,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, patch, post};
 use axum::Json;
-use axum::{extract::Form, extract::State, response::Response};
+use axum::{extract::State, response::Response};
 use chrono::NaiveDateTime as DateTime;
 use entity::order::Model as OrderModel;
 
@@ -83,7 +83,7 @@ impl From<OrderModel> for Order {
 pub async fn create_order(
     AuthJWT(user): AuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Form(payload): Form<CreateOrderRequest>,
+    Json(payload): Json<CreateOrderRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
@@ -277,7 +277,7 @@ pub async fn set_requisites(
     AuthJWT(user): AuthJWT,
     State(app_state): State<Arc<AppState>>,
     Path(order_id): Path<i64>,
-    Form(payload): Form<SetRequisitesRequest>,
+    Json(payload): Json<SetRequisitesRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {

@@ -8,7 +8,7 @@ use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use axum::{extract::State, response::Response, Form};
+use axum::{extract::State, response::Response};
 use entity::admin::Model as AdminModel;
 use sea_orm::TransactionTrait;
 use std::sync::Arc;
@@ -61,7 +61,7 @@ impl From<AdminModel> for ModeratorResponse {
 pub async fn create_moderator(
     State(app_state): State<Arc<AppState>>,
     AdminAuthJWT(_admin): AdminAuthJWT,
-    Form(credentials): Form<ModeratorCredentials>,
+    Json(credentials): Json<ModeratorCredentials>,
 ) -> Response {
     if !credentials.valid() {
         return AppError::EmptyCredentials.into_response();
@@ -145,7 +145,7 @@ pub struct AssignModeratorRequest {
 pub async fn assign_moderator(
     State(app_state): State<Arc<AppState>>,
     ModeratorAuthJWT(moderator): ModeratorAuthJWT,
-    Form(payload): Form<AssignModeratorRequest>,
+    Json(payload): Json<AssignModeratorRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
@@ -191,7 +191,7 @@ pub struct UnassignModeratorRequest {
 pub async fn unassign_moderator(
     State(app_state): State<Arc<AppState>>,
     ModeratorAuthJWT(moderator): ModeratorAuthJWT,
-    Form(payload): Form<UnassignModeratorRequest>,
+    Json(payload): Json<UnassignModeratorRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {

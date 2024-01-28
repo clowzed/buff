@@ -7,7 +7,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Form, Json,
+    Json,
 };
 use entity::currency_rate::Model as RateModel;
 use sea_orm::{prelude::Decimal, TransactionTrait};
@@ -49,7 +49,7 @@ impl From<RateModel> for Currency {
 pub async fn create_currency(
     State(app_state): State<Arc<AppState>>,
     AdminAuthJWT(_admin): AdminAuthJWT,
-    Form(payload): Form<CreateCurrencyRequest>,
+    Json(payload): Json<CreateCurrencyRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
@@ -136,7 +136,7 @@ pub async fn set_currency_rate_by_id(
     State(app_state): State<Arc<AppState>>,
     AdminAuthJWT(_admin): AdminAuthJWT,
     Path(id): Path<i64>,
-    Form(payload): Form<SetRateRequest>,
+    Json(payload): Json<SetRateRequest>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
