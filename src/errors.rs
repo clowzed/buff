@@ -48,7 +48,7 @@ impl Debug for AppError {
             }
             AppError::JwtError(cause) => {
                 tracing::error!(%cause, "jwt error!");
-                write!(f, "Some error occurred with jwt!")
+                write!(f, "Bad or expired token!")
             }
             AppError::Forbidden => write!(f, "You do not have enough permissions"),
             AppError::UserAlreadyBlacklisted => write!(f, "User has already been blacklisted"),
@@ -116,7 +116,7 @@ impl From<&AppError> for StatusCode {
             AppError::AuthorizationHeaderBadSchema => StatusCode::BAD_REQUEST,
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
             AppError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::JwtError(_) => StatusCode::BAD_REQUEST,
+            AppError::JwtError(_) => StatusCode::UNAUTHORIZED,
             AppError::Forbidden => StatusCode::FORBIDDEN,
             AppError::UserAlreadyBlacklisted => StatusCode::CONFLICT,
             AppError::UserWasNotFound(_) => StatusCode::NOT_FOUND,
