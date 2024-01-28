@@ -31,4 +31,5 @@ pub fn router() -> axum::Router<Arc<AppState>> {
             delete(currency::delete_currency_rate_by_id),
         )
         .route("/currency/:id", patch(currency::set_currency_rate_by_id))
+        .route("/self", get(moderators::self_info))
 }

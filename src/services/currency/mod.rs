@@ -139,8 +139,8 @@ impl Service {
         T: ConnectionTrait + TransactionTrait,
     {
         match CurrencyRateEntity::find_by_id(id).one(connection).await? {
-                Some(rate) => Ok(rate),
-                None => Err(ServiceError::SymbolNotFound),
-            }
+            Some(rate) => Ok(rate),
+            None => Err(ServiceError::SymbolNotFound),
+        }
     }
 }

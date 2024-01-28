@@ -10,7 +10,9 @@ use crate::handlers::admin::blacklist::{BlacklistUserRequest, UnblacklistUserReq
 use crate::handlers::admin::currency::SetRateRequest;
 use crate::handlers::admin::currency::{CreateCurrencyRequest, Currency};
 use crate::handlers::admin::moderators::{AssignModeratorRequest, UnassignModeratorRequest};
-use crate::handlers::admin::moderators::{ModeratorCredentials, ModeratorResponse};
+use crate::handlers::admin::moderators::{
+    ModeratorCredentials, ModeratorOrAdminInfo, ModeratorResponse,
+};
 use crate::handlers::admin::orders::TimeBounds;
 use crate::handlers::admin::reviews::{AddVideoReviewRequest, RemoveVideoReviewRequest};
 use crate::handlers::auth::admins::{AdminLoginResponse, Credentials};
@@ -127,7 +129,8 @@ async fn main() {
             handlers::admin::currency::delete_currency_rate_by_id,
             handlers::currency::get_currency_rate_by_id,
             handlers::currency::get_currency_rates,
-            handlers::orders::set_requisites
+            handlers::orders::set_requisites,
+            handlers::admin::moderators::self_info,
         ),
         components(
             schemas(
@@ -145,7 +148,7 @@ async fn main() {
                     AddVideoReviewRequest, AssignModeratorRequest,
                     UnblacklistUserRequest, RemoveVideoReviewRequest,
                     Currency, CreateCurrencyRequest,
-                    SetRateRequest, SetRequisitesRequest
+                    SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo
             )
         ),
         modifiers(&SecurityAddon),

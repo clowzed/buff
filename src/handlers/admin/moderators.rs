@@ -252,7 +252,6 @@ pub async fn list_moderators(
         (status = 404, description = "Moderator was not found",            body = Details),
         (status = 500, description = "Internal Server Error",              body = Details),
     ),
-    
     security(
         ("jwt_admin" = [])
     )
@@ -271,4 +270,34 @@ pub async fn list_moderators_orders(
         .into_response(),
         Err(cause) => Into::<AppError>::into(cause).into_response(),
     }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct ModeratorOrAdminInfo {
+    login: String,
+    role: String,
+}
+
+impl From<AdminModel> for ModeratorOrAdminInfo {
+    fn from(value: AdminModel) -> Self {
+        Self {
+            login: value.login,
+            role: serde_json::to_string(&value.role).unwrap(),
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/admin/self",
+    responses(
+        (status = 200, description = "Information was successfully retrieved", body = ModeratorOrAdminInfo),
+        (status = 401, description = "Unauthorized",                       body = Details),
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn self_info(ModeratorAuthJWT(moderator): ModeratorAuthJWT) -> impl IntoResponse {
+    Json(Into::<ModeratorOrAdminInfo>::into(moderator))
 }
