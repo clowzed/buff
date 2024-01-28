@@ -59,7 +59,7 @@ impl SteamOpenId {
 
         let response = client
             .post("https://steamcommunity.com/openid/login")
-            .header("Content-Type", "application/x-www-Json-urlencoded")
+            .header("Content-Type", "application/x-www-form-urlencoded")
             .body(form_str)
             .send()
             .await
