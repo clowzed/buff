@@ -24,7 +24,7 @@ pub struct ModeratorCredentials {
 
 impl ModeratorCredentials {
     pub fn valid(&self) -> bool {
-        self.login.is_empty() || self.password.is_empty()
+        !self.login.is_empty() && !self.password.is_empty()
     }
 }
 
