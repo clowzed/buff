@@ -274,6 +274,7 @@ pub async fn list_moderators_orders(
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct ModeratorOrAdminInfo {
+    id: i64,
     login: String,
     role: String,
 }
@@ -281,6 +282,7 @@ pub struct ModeratorOrAdminInfo {
 impl From<AdminModel> for ModeratorOrAdminInfo {
     fn from(value: AdminModel) -> Self {
         Self {
+            id: value.id,
             login: value.login,
             role: serde_json::to_string(&value.role).unwrap(),
         }
