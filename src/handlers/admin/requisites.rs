@@ -1,7 +1,7 @@
 use crate::{
     errors::AppError,
     extractors::admin_jwt::AdminAuthJWT,
-    services::social::{Service as SocialService, SetSocialParameters},
+    services::requisites::{Service as RequisitesService, SetRequisitesParameters},
 };
 use axum::{
     extract::State,
@@ -19,17 +19,17 @@ use utoipa::ToSchema;
 use crate::state::AppState;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct SetSocialUrlRequest {
+pub struct SetRequisitesDataRequest {
     id: i64,
-    url: Option<String>,
+    data: Option<String>,
 }
 
 #[utoipa::path(
     patch,
-    path = "/api/admin/social",
-    request_body = SetSocialUrlRequest,
+    path = "/api/admin/requisites",
+    request_body = SetRequisitesDataRequest,
     responses(
-        (status = 204, description = "Social url was successfully updated"),
+        (status = 204, description = "Requisites data was successfully updated"),
         (status = 400, description = "Bad request",                        body = Details),
         (status = 404, description = "Name was not found",                 body = Details),
         (status = 401, description = "Unauthorized",                       body = Details),
@@ -40,26 +40,28 @@ pub struct SetSocialUrlRequest {
     )
 )]
 #[tracing::instrument(skip(app_state))]
-pub async fn set_url(
+pub async fn set_data(
     AdminAuthJWT(user): AdminAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Json(payload): Json<SetSocialUrlRequest>,
+    Json(payload): Json<SetRequisitesDataRequest>,
 ) -> Response {
-    let social_update_parameters = SetSocialParameters {
-        url: payload.url,
+    let requisites_update_parameters = SetRequisitesParameters {
+        data: payload.data,
         id: payload.id,
     };
 
     match app_state.database_connection().begin().await {
-        Ok(transaction) => match SocialService::set(social_update_parameters, &transaction).await {
-            Ok(()) => {
-                if let Err(cause) = transaction.commit().await {
-                    return AppError::InternalServerError(Box::new(cause)).into_response();
+        Ok(transaction) => {
+            match RequisitesService::set(requisites_update_parameters, &transaction).await {
+                Ok(()) => {
+                    if let Err(cause) = transaction.commit().await {
+                        return AppError::InternalServerError(Box::new(cause)).into_response();
+                    }
+                    StatusCode::NO_CONTENT.into_response()
                 }
-                StatusCode::NO_CONTENT.into_response()
+                Err(cause) => Into::<AppError>::into(cause).into_response(),
             }
-            Err(cause) => Into::<AppError>::into(cause).into_response(),
-        },
+        }
         Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
     }
 }

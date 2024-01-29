@@ -1,11 +1,3 @@
-mod config;
-mod errors;
-mod extractors;
-mod handlers;
-mod openid;
-mod services;
-mod state;
-
 use crate::handlers::admin::blacklist::{BlacklistUserRequest, UnblacklistUserRequest};
 use crate::handlers::admin::currency::SetRateRequest;
 use crate::handlers::admin::currency::{CreateCurrencyRequest, Currency};
@@ -14,15 +6,17 @@ use crate::handlers::admin::moderators::{
     ModeratorCredentials, ModeratorOrAdminInfo, ModeratorResponse,
 };
 use crate::handlers::admin::orders::TimeBounds;
+use crate::handlers::admin::requisites::SetRequisitesDataRequest;
 use crate::handlers::admin::reviews::{AddVideoReviewRequest, RemoveVideoReviewRequest};
 use crate::handlers::admin::social::SetSocialUrlRequest;
 use crate::handlers::auth::admins::{AdminLoginResponse, Credentials};
 use crate::handlers::auth::users::{JwtResponse, LoginLinkResponse};
 use crate::handlers::orders::*;
+use crate::handlers::requisites::Requisites;
 use crate::handlers::reviews::users::AddReviewRequest;
 use crate::handlers::reviews::users::Review;
 use crate::handlers::reviews::users::VideoReview;
-
+use crate::handlers::social::Social;
 use crate::handlers::status::users::StatusRequest;
 use crate::handlers::status::users::StatusResponse;
 use crate::handlers::status::users::UserStatus;
@@ -31,6 +25,9 @@ use config::{Configuration, ConfigurationReader, EnvConfigurationReader};
 use entity::admin::ActiveModel as AdminActiveModel;
 use entity::admin::Column as AdminColumn;
 use entity::admin::Entity as AdminEntity;
+use entity::requisites::ActiveModel as RequisitesActiveModel;
+use entity::requisites::Column as RequisitesColumn;
+use entity::requisites::Entity as RequisitesEntity;
 use entity::sea_orm_active_enums::Role;
 use entity::social::ActiveModel as SocialActiveModel;
 use entity::social::Column as SocialColumn;
@@ -51,6 +48,15 @@ use utoipa::{Modify, OpenApi};
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
+
+mod config;
+mod errors;
+mod extractors;
+mod handlers;
+mod openid;
+mod services;
+mod state;
+
 #[tokio::main]
 async fn main() {
     //* Setting up tracing
@@ -137,7 +143,9 @@ async fn main() {
             handlers::orders::set_requisites,
             handlers::admin::moderators::self_info,
             handlers::admin::social::set_url,
-            handlers::social::socials
+            handlers::social::socials,
+            handlers::requisites::requisites,
+            handlers::admin::requisites::set_data,
         ),
         components(
             schemas(
@@ -156,7 +164,7 @@ async fn main() {
                     UnblacklistUserRequest, RemoveVideoReviewRequest,
                     Currency, CreateCurrencyRequest,
                     SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
-                    SetSocialUrlRequest
+                    SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites
             )
         ),
         modifiers(&SecurityAddon),
@@ -194,7 +202,8 @@ async fn main() {
         .nest("/user/order", handlers::orders::router())
         .nest("/user", handlers::user::router())
         .nest("/currency", handlers::currency::router())
-        .nest("/socials", handlers::social::router());
+        .nest("/socials", handlers::social::router())
+        .nest("/requisites", handlers::requisites::router());
 
     let admin_login = "admin";
     let admin_password = "$argon2id$v=19$m=19456,t=2,p=1$ZKBXQv1LtIbVXKASHcIbYw$MYqUU8AI5K2OWN3b4QdkFP+g3Dh6IDnXo40EvFvYeYQ";
@@ -219,14 +228,44 @@ async fn main() {
             .unwrap();
     }
 
+    let requisites = [
+        "Тинькофф",
+        "Сбер Банк",
+        "Киви",
+        "Юмани",
+        "Каспи Банк",
+        "USDT",
+    ];
+
+    for req in requisites {
+        if RequisitesEntity::find()
+            .filter(RequisitesColumn::Name.eq(req))
+            .one(state.database_connection())
+            .await
+            .unwrap()
+            .is_none()
+        {
+            let req_to_be_inserted = RequisitesActiveModel {
+                name: Set(req.to_owned()),
+                ..Default::default()
+            };
+
+            req_to_be_inserted
+                .insert(state.database_connection())
+                .await
+                .unwrap();
+        }
+    }
+
     let socials = ["Вконтакте", "Ютуб", "Телеграм"];
 
     for social in socials {
-        if let None = SocialEntity::find()
+        if SocialEntity::find()
             .filter(SocialColumn::Name.eq(social))
             .one(state.database_connection())
             .await
             .unwrap()
+            .is_none()
         {
             let social_to_be_inserted = SocialActiveModel {
                 name: Set(social.to_owned()),

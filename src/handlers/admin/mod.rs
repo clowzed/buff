@@ -6,6 +6,7 @@ pub mod blacklist;
 pub mod currency;
 pub mod moderators;
 pub mod orders;
+pub mod requisites;
 pub mod reviews;
 pub mod social;
 
@@ -34,4 +35,5 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/currency/:id", patch(currency::set_currency_rate_by_id))
         .route("/self", get(moderators::self_info))
         .route("/social", patch(social::set_url))
+        .route("/requisites", patch(requisites::set_data))
 }

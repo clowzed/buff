@@ -19,7 +19,15 @@
 		"thiserror",
 		"Unblacklist",
 		"unblacklisted",
-		"utoipa"
+		"utoipa",
+		"Банк",
+		"Вконтакте",
+		"Каспи",
+		"Киви",
+		"Сбер",
+		"Тинькофф",
+		"Юмани",
+		"Ютуб"
 	],
 	"todo-tree.tree.showCountsInTree": true
 }

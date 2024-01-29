@@ -4,6 +4,7 @@ pub use super::admin::Entity as Admin;
 pub use super::blacklisted::Entity as Blacklisted;
 pub use super::currency_rate::Entity as CurrencyRate;
 pub use super::order::Entity as Order;
+pub use super::requisites::Entity as Requisites;
 pub use super::review::Entity as Review;
 pub use super::social::Entity as Social;
 pub use super::user::Entity as User;
