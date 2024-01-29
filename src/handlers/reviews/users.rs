@@ -130,6 +130,9 @@ impl From<ReviewModel> for Review {
 pub struct VideoReview {
     pub id: i64,
     pub url: String,
+    pub avatar: String,
+    pub name: String,
+    pub subscribers: String,
 }
 
 //? I was forced to write this by utoipa
@@ -140,6 +143,9 @@ impl From<VideoReviewModel> for VideoReview {
         Self {
             id: value.id,
             url: value.url,
+            avatar: value.avatar,
+            name: value.name,
+            subscribers: value.subscribers,
         }
     }
 }

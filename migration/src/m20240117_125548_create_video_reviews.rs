@@ -19,6 +19,9 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(VideoReview::Url).string().not_null())
+                    .col(ColumnDef::new(VideoReview::Name).string().not_null())
+                    .col(ColumnDef::new(VideoReview::Avatar).string().not_null())
+                    .col(ColumnDef::new(VideoReview::Subscribers).string().not_null())
                     .to_owned(),
             )
             .await
@@ -36,4 +39,7 @@ enum VideoReview {
     Table,
     Id,
     Url,
+    Name,
+    Avatar,
+    Subscribers,
 }

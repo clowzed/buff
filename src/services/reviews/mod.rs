@@ -59,6 +59,23 @@ pub struct AddVideoReviewParameters {
     pub url: String,
 }
 
+#[derive(Debug)]
+pub struct UpdateVideoReviewParameters {
+    pub id: i64,
+    pub url: Option<String>,
+    pub avatar: Option<String>,
+    pub name: Option<String>,
+    pub subscribers: Option<String>,
+}
+
+impl UpdateVideoReviewParameters {
+    pub fn empty(&self) -> bool {
+        self.url.is_none()
+            && self.avatar.is_none()
+            && self.name.is_none()
+            && self.subscribers.is_none()
+    }
+}
 impl Service {
     #[tracing::instrument(skip(connection))]
     pub async fn add_users_review<T>(
@@ -164,6 +181,48 @@ impl Service {
                 Ok(())
             }
             None => Err(ServiceError::ReviewIdNotFound),
+        }
+    }
+
+    #[tracing::instrument(skip(connection))]
+    pub async fn update_video_review<T>(
+        parameters: impl Into<UpdateVideoReviewParameters> + Debug,
+        connection: &T,
+    ) -> Result<(), ServiceError>
+    where
+        T: ConnectionTrait + TransactionTrait,
+    {
+        let provided = parameters.into();
+
+        if provided.empty() {
+            return Ok(());
+        }
+
+        match VideoReviewEntity::find_by_id(provided.id)
+            .one(connection)
+            .await?
+        {
+            Some(video) => {
+                let mut video_to_be_updated: VideoReviewActiveModel = video.into();
+
+                if let Some(name) = provided.name {
+                    video_to_be_updated.name = Set(name);
+                }
+                if let Some(avatar) = provided.avatar {
+                    video_to_be_updated.avatar = Set(avatar);
+                }
+                if let Some(url) = provided.url {
+                    video_to_be_updated.url = Set(url);
+                }
+
+                if let Some(subscribers) = provided.subscribers {
+                    video_to_be_updated.subscribers = Set(subscribers);
+                }
+
+                video_to_be_updated.update(connection).await?;
+                Ok(())
+            }
+            None => Err(ServiceError::VideoReviewIdNotFound),
         }
     }
 }

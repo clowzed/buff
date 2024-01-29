@@ -17,6 +17,7 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/blacklist", delete(blacklist::unblacklist_user))
         .route("/review/video", post(reviews::add_video_review))
         .route("/review/video", delete(reviews::remove_video_review))
+        .route("/review/video", patch(reviews::update_video_review))
         .route("/moderator", post(moderators::create_moderator))
         .route("/moderator", delete(moderators::delete_moderator))
         .route("/moderator", get(moderators::list_moderators))

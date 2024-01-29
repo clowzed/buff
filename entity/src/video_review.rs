@@ -9,6 +9,9 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
     pub url: String,
+    pub name: String,
+    pub avatar: String,
+    pub subscribers: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

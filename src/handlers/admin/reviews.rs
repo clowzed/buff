@@ -1,7 +1,9 @@
 use crate::{
     errors::AppError,
     extractors::admin_jwt::AdminAuthJWT,
-    services::reviews::{AddVideoReviewParameters, Service as ReviewsService},
+    services::reviews::{
+        AddVideoReviewParameters, Service as ReviewsService, UpdateVideoReviewParameters,
+    },
 };
 use axum::{
     extract::State,
@@ -96,6 +98,9 @@ pub async fn remove_video_review(
 #[derive(ToSchema, serde::Serialize, serde::Deserialize, Debug)]
 pub struct AddVideoReviewRequest {
     pub url: String,
+    pub avatar: String,
+    pub name: String,
+    pub subscribers: String,
 }
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize, Debug)]
@@ -107,6 +112,9 @@ pub struct RemoveVideoReviewRequest {
 pub struct VideoReview {
     pub id: i64,
     pub url: String,
+    pub avatar: String,
+    pub name: String,
+    pub subscribers: String,
 }
 
 //? I was forced to write this by utoipa
@@ -117,6 +125,9 @@ impl From<VideoReviewModel> for VideoReview {
         Self {
             id: value.id,
             url: value.url,
+            name: value.name,
+            avatar: value.avatar,
+            subscribers: value.subscribers,
         }
     }
 }
@@ -156,6 +167,60 @@ pub async fn remove_review(
             }
             Err(cause) => Into::<AppError>::into(cause).into_response(),
         },
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
+#[derive(ToSchema, serde::Serialize, serde::Deserialize, Debug)]
+pub struct UpdateVideoReviewRequest {
+    pub id: i64,
+    pub url: Option<String>,
+    pub avatar: Option<String>,
+    pub name: Option<String>,
+    pub subscribers: Option<String>,
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/admin/review/video",
+    request_body = UpdateVideoReviewRequest,
+    responses(
+        (status = 204, description = "Review was successfully changed"),
+        (status = 400, description = "Bad request",                        body = Details),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 404, description = "Provided review id does not exist",  body = Details),
+        (status = 500, description = "Internal Server Error",              body = Details),
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+#[tracing::instrument(skip(app_state))]
+pub async fn update_video_review(
+    AdminAuthJWT(user): AdminAuthJWT,
+    State(app_state): State<Arc<AppState>>,
+    Json(payload): Json<UpdateVideoReviewRequest>,
+) -> Response {
+    match app_state.database_connection().begin().await {
+        Ok(transaction) => {
+            let parameters = UpdateVideoReviewParameters {
+                id: payload.id,
+                url: payload.url,
+                avatar: payload.avatar,
+                name: payload.name,
+
+                subscribers: payload.subscribers,
+            };
+            match ReviewsService::update_video_review(parameters, &transaction).await {
+                Ok(()) => {
+                    if let Err(cause) = transaction.commit().await {
+                        return AppError::InternalServerError(Box::new(cause)).into_response();
+                    }
+                    StatusCode::NO_CONTENT.into_response()
+                }
+                Err(cause) => Into::<AppError>::into(cause).into_response(),
+            }
+        }
         Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
     }
 }

@@ -7,6 +7,7 @@ use crate::handlers::admin::moderators::{
 };
 use crate::handlers::admin::orders::TimeBounds;
 use crate::handlers::admin::requisites::SetRequisitesDataRequest;
+use crate::handlers::admin::reviews::UpdateVideoReviewRequest;
 use crate::handlers::admin::reviews::{AddVideoReviewRequest, RemoveVideoReviewRequest};
 use crate::handlers::admin::social::SetSocialUrlRequest;
 use crate::handlers::auth::admins::{AdminLoginResponse, Credentials};
@@ -146,6 +147,7 @@ async fn main() {
             handlers::social::socials,
             handlers::requisites::requisites,
             handlers::admin::requisites::set_data,
+            handlers::admin::reviews::update_video_review,
         ),
         components(
             schemas(
@@ -164,7 +166,8 @@ async fn main() {
                     UnblacklistUserRequest, RemoveVideoReviewRequest,
                     Currency, CreateCurrencyRequest,
                     SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
-                    SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites
+                    SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites,
+                    UpdateVideoReviewRequest
             )
         ),
         modifiers(&SecurityAddon),
