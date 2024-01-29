@@ -54,7 +54,7 @@ services:
        - REDIS_URL=redis://redis:6379
        - PORT=8080
        - STATUS_EXPIRATION_SECONDS=30
-       - REALM=http://127.0.0.1
+       - REALM=http://127.0.0.1:5173
        - SQLX_LOGGING=true
        - JWT_SECRET=secret
 

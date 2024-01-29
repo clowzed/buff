@@ -84,8 +84,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let openid =
-        openid::SteamOpenId::new(configuration.realm(), "/api/auth/user/callback").unwrap();
+    let openid = openid::SteamOpenId::new(configuration.realm(), "/auth/steam-success").unwrap();
 
     let state = AppState::new(database_connection, configuration, redis_client, openid);
 
