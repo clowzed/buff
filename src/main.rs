@@ -15,12 +15,14 @@ use crate::handlers::admin::moderators::{
 };
 use crate::handlers::admin::orders::TimeBounds;
 use crate::handlers::admin::reviews::{AddVideoReviewRequest, RemoveVideoReviewRequest};
+use crate::handlers::admin::social::SetSocialUrlRequest;
 use crate::handlers::auth::admins::{AdminLoginResponse, Credentials};
 use crate::handlers::auth::users::{JwtResponse, LoginLinkResponse};
 use crate::handlers::orders::*;
 use crate::handlers::reviews::users::AddReviewRequest;
 use crate::handlers::reviews::users::Review;
 use crate::handlers::reviews::users::VideoReview;
+
 use crate::handlers::status::users::StatusRequest;
 use crate::handlers::status::users::StatusResponse;
 use crate::handlers::status::users::UserStatus;
@@ -30,10 +32,15 @@ use entity::admin::ActiveModel as AdminActiveModel;
 use entity::admin::Column as AdminColumn;
 use entity::admin::Entity as AdminEntity;
 use entity::sea_orm_active_enums::Role;
+use entity::social::ActiveModel as SocialActiveModel;
+use entity::social::Column as SocialColumn;
+use entity::social::Entity as SocialEntity;
 use errors::Details;
 use migration::{Migrator, MigratorTrait};
 use openid::VerifyForm;
-use sea_orm::{ColumnTrait, ConnectOptions, Database, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectOptions, Database, EntityTrait, QueryFilter, Set,
+};
 use state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -44,7 +51,6 @@ use utoipa::{Modify, OpenApi};
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
-
 #[tokio::main]
 async fn main() {
     //* Setting up tracing
@@ -130,6 +136,8 @@ async fn main() {
             handlers::currency::get_currency_rates,
             handlers::orders::set_requisites,
             handlers::admin::moderators::self_info,
+            handlers::admin::social::set_url,
+            handlers::social::socials
         ),
         components(
             schemas(
@@ -147,7 +155,8 @@ async fn main() {
                     AddVideoReviewRequest, AssignModeratorRequest,
                     UnblacklistUserRequest, RemoveVideoReviewRequest,
                     Currency, CreateCurrencyRequest,
-                    SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo
+                    SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
+                    SetSocialUrlRequest
             )
         ),
         modifiers(&SecurityAddon),
@@ -184,7 +193,8 @@ async fn main() {
         .nest("/review", handlers::reviews::router())
         .nest("/user/order", handlers::orders::router())
         .nest("/user", handlers::user::router())
-        .nest("/currency", handlers::currency::router());
+        .nest("/currency", handlers::currency::router())
+        .nest("/socials", handlers::social::router());
 
     let admin_login = "admin";
     let admin_password = "$argon2id$v=19$m=19456,t=2,p=1$ZKBXQv1LtIbVXKASHcIbYw$MYqUU8AI5K2OWN3b4QdkFP+g3Dh6IDnXo40EvFvYeYQ";
@@ -207,6 +217,27 @@ async fn main() {
             .exec_with_returning(state.database_connection())
             .await
             .unwrap();
+    }
+
+    let socials = ["Вконтакте", "Ютуб", "Телеграм"];
+
+    for social in socials {
+        if let None = SocialEntity::find()
+            .filter(SocialColumn::Name.eq(social))
+            .one(state.database_connection())
+            .await
+            .unwrap()
+        {
+            let social_to_be_inserted = SocialActiveModel {
+                name: Set(social.to_owned()),
+                ..Default::default()
+            };
+
+            social_to_be_inserted
+                .insert(state.database_connection())
+                .await
+                .unwrap();
+        }
     }
 
     let app = axum::Router::new()

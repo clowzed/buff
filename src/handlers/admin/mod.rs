@@ -7,6 +7,7 @@ pub mod currency;
 pub mod moderators;
 pub mod orders;
 pub mod reviews;
+pub mod social;
 
 pub fn router() -> axum::Router<Arc<AppState>> {
     axum::Router::new()
@@ -32,4 +33,5 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         )
         .route("/currency/:id", patch(currency::set_currency_rate_by_id))
         .route("/self", get(moderators::self_info))
+        .route("/social", patch(social::set_url))
 }

@@ -8,5 +8,6 @@ pub mod currency_rate;
 pub mod order;
 pub mod review;
 pub mod sea_orm_active_enums;
+pub mod social;
 pub mod user;
 pub mod video_review;

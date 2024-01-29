@@ -33,6 +33,7 @@ pub enum AppError {
     ReviewWasNotFound,
     OrderAlreadyCanceled,
     SymbolAlreadyExists,
+    NameWasNotFound,
 }
 
 impl Debug for AppError {
@@ -86,6 +87,7 @@ impl Debug for AppError {
                 write!(f, "Order has already been marked as canceled")
             }
             AppError::SymbolAlreadyExists => write!(f, "Symbol already exists"),
+            AppError::NameWasNotFound => write!(f, "Name was not found"),
         }
     }
 }
@@ -141,6 +143,7 @@ impl From<&AppError> for StatusCode {
             AppError::ReviewWasNotFound => StatusCode::NOT_FOUND,
             AppError::OrderAlreadyCanceled => StatusCode::CONFLICT,
             AppError::SymbolAlreadyExists => StatusCode::CONFLICT,
+            AppError::NameWasNotFound => StatusCode::NOT_FOUND,
         }
     }
 }
