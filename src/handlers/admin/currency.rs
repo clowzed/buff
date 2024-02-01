@@ -22,6 +22,7 @@ pub struct CreateCurrencyRequest {
 }
 #[derive(serde::Deserialize, serde::Serialize, Debug, ToSchema)]
 pub struct Currency {
+    id: i64,
     symbol: String,
     #[schema(value_type = String)]
     rate: Decimal,
@@ -30,6 +31,7 @@ pub struct Currency {
 impl From<RateModel> for Currency {
     fn from(value: RateModel) -> Self {
         Self {
+            id: value.id,
             symbol: value.symbol,
             rate: value.rate,
         }
