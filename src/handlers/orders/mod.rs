@@ -132,7 +132,7 @@ pub async fn create_order(
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description = "Order id")
+        ("id" = i64, Path, description = "Order id")
     ),
     security(
         ("jwt_user" = [])
@@ -218,7 +218,7 @@ pub async fn list_orders(
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description = "Order id")
+        ("id" = i64, Path, description = "Order id")
     ),
     security(
         ("jwt_user" = [])
@@ -266,7 +266,7 @@ pub struct SetRequisitesRequest {
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description = "Order id")
+        ("id" = i64, Path, description = "Order id")
     ),
     security(
         ("jwt_user" = [])

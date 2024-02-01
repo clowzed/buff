@@ -82,7 +82,7 @@ pub async fn create_currency(
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description ="Currency rate id")
+        ("id" = i64, Path, description ="Currency rate id")
     ),
     security(
         ("jwt_admin" = [])
@@ -126,7 +126,7 @@ pub struct SetRateRequest {
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description ="Currency rate id")
+        ("id" = i64, Path, description ="Currency rate id")
     ),
     security(
         ("jwt_admin" = [])

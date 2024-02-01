@@ -1,6 +1,6 @@
 use crate::{errors::AppError, extractors::user_jwt::AuthJWT, state::AppState};
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, patch},
@@ -8,7 +8,7 @@ use axum::{
 };
 use redis::AsyncCommands;
 use std::sync::Arc;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Debug, serde::Serialize, ToSchema)]
 pub struct StatusResponse {
@@ -54,7 +54,7 @@ pub async fn refresh_status(
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, IntoParams)]
 pub struct StatusRequest {
     ids: Vec<i64>,
 }
@@ -62,7 +62,9 @@ pub struct StatusRequest {
 #[utoipa::path(
     get,
     path = "/api/status/user",
-    request_body = StatusRequest,
+    params(
+        StatusRequest
+    ),
     responses(
         (status = 500, description = "Internal server error",              body = Details),
         (status = 400, description = "Bad request",                        body = Details),
@@ -72,7 +74,7 @@ pub struct StatusRequest {
 #[tracing::instrument(skip(app_state, payload))]
 pub async fn fetch_status(
     State(app_state): State<Arc<AppState>>,
-    Json(payload): Json<StatusRequest>,
+    Query(payload): Query<StatusRequest>,
 ) -> Response {
     let mut client = match app_state.redis_client().get_async_connection().await {
         Ok(connection) => connection,

@@ -4,16 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.7.4", features = ["tracing", "ws"] }
+axum = { version = "0.7.4", features = ["tracing", "ws", "macros", "json"] }
 chrono = { version = "0.4.31", features = ["serde"] }
 dotenvy = "0.15.7"
 envy = "0.4.2"
 jsonwebtoken = "9.2.0"
 redis = { version = "0.24.0", features = ["tokio-comp"] }
 sea-orm = { version = "0.12.10", features = [
-	"sqlx-postgres",
-	"runtime-tokio-rustls",
-	"macros",
+    "sqlx-postgres",
+    "runtime-tokio-rustls",
+    "macros",
 ] }
 serde = { version = "1.0.195", features = ["derive"] }
 serde_json = "1.0.111"
@@ -26,9 +26,9 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 migration = { path = "migration" }
 entity = { path = "entity" }
 utoipa = { version = "4.2.0", features = [
-	"axum_extras",
-	"chrono",
-	"preserve_order",
+    "axum_extras",
+    "chrono",
+    "preserve_order",
 ] }
 utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }
 utoipa-redoc = { version = "3.0.0", features = ["axum"] }

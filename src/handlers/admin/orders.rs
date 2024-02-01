@@ -27,7 +27,7 @@ use redis::AsyncCommands;
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description = "Order id")
+        ("id" = i64, Path, description = "Order id")
     ),
     security(
         ("jwt_admin" = [])
@@ -64,7 +64,7 @@ pub async fn cancel_order_by_id(
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description = "Order id")
+        ("id" = i64, Path, description = "Order id")
     ),
     security(
         ("jwt_admin" = [])

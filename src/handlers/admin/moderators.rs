@@ -95,7 +95,7 @@ pub async fn create_moderator(
         (status = 403, description = "Moderator has admin role",           body = Details),
         (status = 500, description = "Internal Server Error",              body = Details),
     ),
-    params(("id" = i32, Path, description = "Moderator id")),
+    params(("id" = i64, Path, description = "Moderator id")),
     security(
         ("jwt_admin" = [])
     )

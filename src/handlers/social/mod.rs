@@ -32,7 +32,7 @@ impl From<SocialModel> for Social {
 
 #[utoipa::path(
     get,
-    path = "/api/social",
+    path = "/api/socials",
     responses(
         (status = 200, description = "Socials were successfully retrieved", body = [Social]),
         (status = 500, description = "Internal Server Error",              body = Details),

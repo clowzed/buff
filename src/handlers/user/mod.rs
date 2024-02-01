@@ -10,7 +10,8 @@ use crate::services::users::Service as UsersService;
 use crate::{errors::AppError, extractors::user_jwt::AuthJWT, state::AppState};
 use entity::user::Model as UserModel;
 use std::sync::Arc;
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug)]
 pub struct User {
     pub steam_id: i64,
     pub trade_url: Option<String>,

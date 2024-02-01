@@ -19,7 +19,7 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/review/video", delete(reviews::remove_video_review))
         .route("/review/video", patch(reviews::update_video_review))
         .route("/moderator", post(moderators::create_moderator))
-        .route("/moderator", delete(moderators::delete_moderator))
+        .route("/moderator/:id", delete(moderators::delete_moderator))
         .route("/moderator", get(moderators::list_moderators))
         .route("/moderator/orders", get(moderators::list_moderators_orders))
         .route("/moderator/unassign", patch(moderators::unassign_moderator))

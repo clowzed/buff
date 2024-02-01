@@ -1,8 +1,11 @@
 use crate::errors::AppError;
 use entity::requisites::ActiveModel as RequisitesActiveModel;
+use entity::requisites::Column as RequisitesColumn;
 use entity::requisites::Entity as RequisitesEntity;
 use entity::requisites::Model as RequisitesModel;
 use sea_orm::prelude::*;
+use sea_orm::Order::Asc;
+use sea_orm::QueryOrder;
 use sea_orm::Set;
 use sea_orm::TransactionTrait;
 use std::fmt::Debug;
@@ -39,7 +42,10 @@ impl Service {
     where
         T: ConnectionTrait + TransactionTrait,
     {
-        Ok(RequisitesEntity::find().all(connection).await?)
+        Ok(RequisitesEntity::find()
+            .order_by(RequisitesColumn::Id, Asc)
+            .all(connection)
+            .await?)
     }
 
     #[tracing::instrument(skip(connection))]

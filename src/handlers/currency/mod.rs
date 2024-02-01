@@ -24,7 +24,7 @@ use std::sync::Arc;
         (status = 500, description = "Internal Server Error", body = Details),
     ),
     params(
-        ("id" = i32, Path, description ="Currency rate id")
+        ("id" = i64, Path, description ="Currency rate id")
     ),
 )]
 pub async fn get_currency_rate_by_id(
