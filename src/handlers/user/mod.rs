@@ -6,7 +6,7 @@ use crate::{
         users::Service as UsersService,
     },
     state::AppState,
-    ChatHistory, ChatResponse, GetChatRequest, SendMessageResponse, UploadData,
+    ChatHistory, ChatResponse, GetChatRequest, Message, SendMessageResponse, UploadData,
 };
 use axum::{
     body::Body,
@@ -271,12 +271,17 @@ pub async fn send_message(
                         return AppError::InternalServerError(Box::new(cause)).into_response();
                     }
 
+                    let send = SendMessageResponse {
+                        message: Into::<Message>::into(res.0),
+                        images_ids: res.1,
+                    };
+
                     match app_state.redis_client().get_async_connection().await {
                         Ok(mut connection) => {
                             let _: Result<(), _> = connection
                                 .publish(
                                     format!("chat-{}", chat_id),
-                                    serde_json::to_string(&res.0).unwrap(),
+                                    serde_json::to_string(&send).unwrap(),
                                 )
                                 .await;
                         }
@@ -285,11 +290,7 @@ pub async fn send_message(
                         }
                     };
 
-                    Json(SendMessageResponse {
-                        message_id: res.0.id,
-                        images_ids: res.1,
-                    })
-                    .into_response()
+                    Json(send).into_response()
                 }
                 Err(cause) => Into::<AppError>::into(cause).into_response(),
             }
@@ -412,7 +413,7 @@ pub async fn image(
 }
 
 use axum::extract::{
-    ws::{Message, WebSocket},
+    ws::{Message as WsMessage, WebSocket},
     WebSocketUpgrade,
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
@@ -460,7 +461,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>, chat_id: i64) {
 
     // Sends Order component
     while let Some(msg) = rx.recv().await {
-        if sender.send(Message::Text(msg)).await.is_err() {
+        if sender.send(WsMessage::Text(msg)).await.is_err() {
             break;
         }
     }

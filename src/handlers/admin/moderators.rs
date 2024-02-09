@@ -19,13 +19,11 @@ use axum::{
 };
 use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 use chrono::NaiveDateTime as DateTime;
-use entity::image::Entity as ImageEntity;
-use entity::message::Entity as MessageEntity;
 use entity::{
     admin::Model as AdminModel,
     chat::{Entity as ChatEntity, Model as ChatModel},
-    image::Model as ImageModel,
-    message::Model as MessageModel,
+    image::{Entity as ImageEntity, Model as ImageModel},
+    message::{Entity as MessageEntity, Model as MessageModel},
 };
 
 use redis::AsyncCommands;
@@ -96,7 +94,7 @@ pub struct ChangePasswordRequest {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct SendMessageResponse {
-    pub message_id: i64,
+    pub message: Message,
     pub images_ids: Vec<i64>,
 }
 
@@ -513,12 +511,17 @@ pub async fn send_message(
                         return AppError::InternalServerError(Box::new(cause)).into_response();
                     }
 
+                    let send = SendMessageResponse {
+                        message: Into::<Message>::into(res.0),
+                        images_ids: res.1,
+                    };
+
                     match app_state.redis_client().get_async_connection().await {
                         Ok(mut connection) => {
                             let _: Result<(), _> = connection
                                 .publish(
                                     format!("chat-{}", chat_id),
-                                    serde_json::to_string(&res.0).unwrap(),
+                                    serde_json::to_string(&send).unwrap(),
                                 )
                                 .await;
                         }
@@ -527,11 +530,7 @@ pub async fn send_message(
                         }
                     };
 
-                    Json(SendMessageResponse {
-                        message_id: res.0.id,
-                        images_ids: res.1,
-                    })
-                    .into_response()
+                    Json(send).into_response()
                 }
                 Err(cause) => Into::<AppError>::into(cause).into_response(),
             }
