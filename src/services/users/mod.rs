@@ -1,19 +1,12 @@
-use entity::user::ActiveModel as UserActiveModel;
-use entity::user::Column as UserColumn;
-use entity::user::Entity as UserEntity;
-use entity::user::Model as UserModel;
+use entity::user::{
+    ActiveModel as UserActiveModel, Column as UserColumn, Entity as UserEntity, Model as UserModel,
+};
 
-use migration::Alias;
-use migration::Query;
-use migration::SimpleExpr;
-use sea_orm::Condition;
-use sea_orm::FromQueryResult;
-use sea_orm::JoinType;
-use sea_orm::Order;
-use sea_orm::QueryOrder;
-use sea_orm::QuerySelect;
-use sea_orm::Set;
-use sea_orm::{prelude::*, TransactionTrait};
+use migration::{Alias, Query, SimpleExpr};
+use sea_orm::{
+    prelude::*, Condition, FromQueryResult, JoinType, Order, QueryOrder, QuerySelect, Set,
+    TransactionTrait,
+};
 
 use crate::errors::AppError;
 

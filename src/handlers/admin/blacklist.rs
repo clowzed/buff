@@ -1,12 +1,13 @@
-use crate::errors::AppError;
-use crate::extractors::admin_jwt::AdminAuthJWT;
-use crate::services::admin::blacklist::Service as BlacklistService;
-use crate::state::AppState;
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::response::Response;
-use axum::Json;
+use crate::{
+    errors::AppError, extractors::admin_jwt::AdminAuthJWT,
+    services::admin::blacklist::Service as BlacklistService, state::AppState,
+};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use sea_orm::TransactionTrait;
 use std::sync::Arc;
 use utoipa::ToSchema;

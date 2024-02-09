@@ -1,7 +1,13 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
-use std::{error::Error, fmt::Debug};
+use std::{
+    error::Error,
+    fmt::{Debug, Display},
+};
 use utoipa::ToSchema;
 
+use crate::services::chat::ServiceError;
+
+#[derive(thiserror::Error)]
 pub enum AppError {
     AuthorizationHeaderMissing,
     AuthorizationHeaderBadChars,
@@ -34,6 +40,14 @@ pub enum AppError {
     OrderAlreadyCanceled,
     SymbolAlreadyExists,
     NameWasNotFound,
+    #[error(transparent)]
+    ChatServiceError(#[from] ServiceError),
+}
+
+impl Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Debug for AppError {
@@ -88,6 +102,7 @@ impl Debug for AppError {
             }
             AppError::SymbolAlreadyExists => write!(f, "Symbol already exists"),
             AppError::NameWasNotFound => write!(f, "Name was not found"),
+            AppError::ChatServiceError(error) => write!(f, "{}", error),
         }
     }
 }
@@ -144,6 +159,7 @@ impl From<&AppError> for StatusCode {
             AppError::OrderAlreadyCanceled => StatusCode::CONFLICT,
             AppError::SymbolAlreadyExists => StatusCode::CONFLICT,
             AppError::NameWasNotFound => StatusCode::NOT_FOUND,
+            AppError::ChatServiceError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

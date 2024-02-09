@@ -1,4 +1,7 @@
-use std::{fmt::Debug, path::Path};
+use std::{
+    fmt::Debug,
+    path::{Path, PathBuf},
+};
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Configuration {
@@ -9,6 +12,7 @@ pub struct Configuration {
     jwt_secret: String,
     status_expiration_seconds: u64,
     realm: String,
+    upload_folder: PathBuf,
 }
 
 impl Configuration {
@@ -38,6 +42,10 @@ impl Configuration {
 
     pub fn realm(&self) -> &str {
         self.realm.as_ref()
+    }
+
+    pub fn upload_folder(&self) -> &PathBuf {
+        &self.upload_folder
     }
 }
 

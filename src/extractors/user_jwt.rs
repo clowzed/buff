@@ -1,10 +1,15 @@
 use std::sync::Arc;
 
-use crate::services::auth::{JwtCheckParams, Service as AuthService};
-use crate::{errors::AppError, state::AppState};
-use axum::async_trait;
-use axum::extract::{FromRef, FromRequestParts};
-use axum::http::request::Parts;
+use crate::{
+    errors::AppError,
+    services::auth::{JwtCheckParams, Service as AuthService},
+    state::AppState,
+};
+use axum::{
+    async_trait,
+    extract::{FromRef, FromRequestParts},
+    http::request::Parts,
+};
 use entity::user::{Entity as UserEntity, Model as UserModel};
 use sea_orm::EntityTrait;
 

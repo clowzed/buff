@@ -1,21 +1,18 @@
 use crate::errors::AppError;
 
 use chrono::Utc;
-use entity::order::ActiveModel as OrderActiveModel;
-use entity::order::Column as OrderColumn;
-use entity::order::Entity as OrderEntity;
-use entity::order::Model as OrderModel;
-use entity::sea_orm_active_enums::Status;
+use entity::{
+    order::{
+        ActiveModel as OrderActiveModel, Column as OrderColumn, Entity as OrderEntity,
+        Model as OrderModel,
+    },
+    sea_orm_active_enums::Status,
+};
 
-use sea_orm::prelude::Decimal;
-use sea_orm::ActiveModelTrait;
-use sea_orm::ColumnTrait;
-use sea_orm::ConnectionTrait;
-use sea_orm::EntityTrait;
-use sea_orm::QueryFilter;
-use sea_orm::Set;
-use sea_orm::TransactionTrait;
-use sea_orm::TryIntoModel;
+use sea_orm::{
+    prelude::Decimal, ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
+    Set, TransactionTrait, TryIntoModel,
+};
 
 use std::fmt::Debug;
 

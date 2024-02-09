@@ -1,13 +1,9 @@
 use crate::errors::AppError;
-use entity::requisites::ActiveModel as RequisitesActiveModel;
-use entity::requisites::Column as RequisitesColumn;
-use entity::requisites::Entity as RequisitesEntity;
-use entity::requisites::Model as RequisitesModel;
-use sea_orm::prelude::*;
-use sea_orm::Order::Asc;
-use sea_orm::QueryOrder;
-use sea_orm::Set;
-use sea_orm::TransactionTrait;
+use entity::requisites::{
+    ActiveModel as RequisitesActiveModel, Column as RequisitesColumn, Entity as RequisitesEntity,
+    Model as RequisitesModel,
+};
+use sea_orm::{prelude::*, Order::Asc, QueryOrder, Set, TransactionTrait};
 use std::fmt::Debug;
 
 #[allow(dead_code)]

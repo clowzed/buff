@@ -1,13 +1,19 @@
 use std::sync::Arc;
 
-use crate::services::auth::{JwtCheckParams, Service as AuthService};
-use crate::{errors::AppError, state::AppState};
-use axum::async_trait;
-use axum::extract::{FromRef, FromRequestParts};
-use axum::http::request::Parts;
-use entity::admin::Entity as AdminEntity;
-use entity::admin::Model as AdminModel;
-use entity::sea_orm_active_enums::Role;
+use crate::{
+    errors::AppError,
+    services::auth::{JwtCheckParams, Service as AuthService},
+    state::AppState,
+};
+use axum::{
+    async_trait,
+    extract::{FromRef, FromRequestParts},
+    http::request::Parts,
+};
+use entity::{
+    admin::{Entity as AdminEntity, Model as AdminModel},
+    sea_orm_active_enums::Role,
+};
 use sea_orm::prelude::*;
 
 pub struct AdminAuthJWT(pub AdminModel);

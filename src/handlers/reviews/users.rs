@@ -11,8 +11,7 @@ use axum::{
 };
 
 use chrono::NaiveDateTime as DateTime;
-use entity::review::Model as ReviewModel;
-use entity::video_review::Model as VideoReviewModel;
+use entity::{review::Model as ReviewModel, video_review::Model as VideoReviewModel};
 use std::sync::Arc;
 use utoipa::ToSchema;
 

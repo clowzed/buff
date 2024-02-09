@@ -1,12 +1,18 @@
-use crate::errors::AppError;
-use crate::openid::VerifyForm;
-use crate::services::auth::{GenerateUserJwtParameters, Jwt, Service as AuthService};
-use crate::services::users::Service as UserService;
-use crate::state::AppState;
-use axum::extract::{Query, State};
-use axum::response::{IntoResponse, Response};
-use axum::routing::get;
-use axum::Json;
+use crate::{
+    errors::AppError,
+    openid::VerifyForm,
+    services::{
+        auth::{GenerateUserJwtParameters, Jwt, Service as AuthService},
+        users::Service as UserService,
+    },
+    state::AppState,
+};
+use axum::{
+    extract::{Query, State},
+    response::{IntoResponse, Response},
+    routing::get,
+    Json,
+};
 use sea_orm::TransactionTrait;
 use std::sync::Arc;
 use utoipa::ToSchema;

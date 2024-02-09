@@ -16,6 +16,8 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::blacklisted::Entity")]
     Blacklisted,
+    #[sea_orm(has_many = "super::chat::Entity")]
+    Chat,
     #[sea_orm(has_many = "super::order::Entity")]
     Order,
     #[sea_orm(has_many = "super::review::Entity")]
@@ -25,6 +27,12 @@ pub enum Relation {
 impl Related<super::blacklisted::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Blacklisted.def()
+    }
+}
+
+impl Related<super::chat::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Chat.def()
     }
 }
 

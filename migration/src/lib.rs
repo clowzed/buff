@@ -9,6 +9,10 @@ mod m20240117_153036_create_orders;
 mod m20240119_082815_create_currency_rates;
 mod m20240129_092330_create_social;
 mod m20240129_121009_create_requisites;
+mod m20240207_212222_create_chat;
+mod m20240207_221530_create_messages;
+mod m20240209_094155_create_images;
+
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -24,6 +28,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20240119_082815_create_currency_rates::Migration),
             Box::new(m20240129_092330_create_social::Migration),
             Box::new(m20240129_121009_create_requisites::Migration),
+            Box::new(m20240207_212222_create_chat::Migration),
+            Box::new(m20240207_221530_create_messages::Migration),
+            Box::new(m20240209_094155_create_images::Migration),
         ]
     }
 }

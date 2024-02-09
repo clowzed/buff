@@ -1,19 +1,19 @@
 use std::fmt::Debug;
 
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-use entity::admin::ActiveModel as AdminActiveModel;
-use entity::admin::Column as AdminColumn;
-use entity::admin::Entity as AdminEntity;
-use entity::admin::Model as AdminModel;
-use entity::order::ActiveModel as OrderActiveModel;
-use entity::order::Column as OrderColumn;
-use entity::order::Entity as OrderEntity;
-use entity::order::Model as OrderModel;
-use entity::sea_orm_active_enums::Role;
-use entity::sea_orm_active_enums::Status;
+use entity::{
+    admin::{
+        ActiveModel as AdminActiveModel, Column as AdminColumn, Entity as AdminEntity,
+        Model as AdminModel,
+    },
+    order::{
+        ActiveModel as OrderActiveModel, Column as OrderColumn, Entity as OrderEntity,
+        Model as OrderModel,
+    },
+    sea_orm_active_enums::{Role, Status},
+};
 use rand_core::OsRng;
-use sea_orm::Set;
-use sea_orm::{prelude::*, TransactionTrait};
+use sea_orm::{prelude::*, Set, TransactionTrait};
 
 use crate::errors::AppError;
 

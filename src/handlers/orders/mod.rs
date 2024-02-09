@@ -1,23 +1,26 @@
-use crate::services::currency::Service as CurrencyService;
-use crate::services::orders::{
-    CancelOrderParameters, GetUserOrderParameters, Service as OrderService,
-    SetOrderRequisitesParameters,
-};
 use crate::{
-    errors::AppError, extractors::user_jwt::AuthJWT, services::orders::CreateOrderParameters,
+    errors::AppError,
+    extractors::user_jwt::AuthJWT,
+    services::{
+        currency::Service as CurrencyService,
+        orders::{
+            CancelOrderParameters, CreateOrderParameters, GetUserOrderParameters,
+            Service as OrderService, SetOrderRequisitesParameters,
+        },
+    },
     state::AppState,
 };
-use axum::extract::Path;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::routing::{get, patch, post};
-use axum::Json;
-use axum::{extract::State, response::Response};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::{get, patch, post},
+    Json,
+};
 use chrono::NaiveDateTime as DateTime;
 use entity::order::Model as OrderModel;
 
-use sea_orm::prelude::Decimal;
-use sea_orm::TransactionTrait;
+use sea_orm::{prelude::Decimal, TransactionTrait};
 use std::sync::Arc;
 use utoipa::ToSchema;
 

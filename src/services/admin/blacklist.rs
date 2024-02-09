@@ -1,9 +1,7 @@
-use entity::blacklisted::ActiveModel as BlacklistedActiveModel;
-use entity::blacklisted::Entity as BlacklistedEntity;
+use entity::blacklisted::{ActiveModel as BlacklistedActiveModel, Entity as BlacklistedEntity};
 
 use entity::user::Entity as UserEntity;
-use sea_orm::Set;
-use sea_orm::{prelude::*, TransactionTrait};
+use sea_orm::{prelude::*, Set, TransactionTrait};
 
 use crate::errors::AppError;
 

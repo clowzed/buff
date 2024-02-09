@@ -1,7 +1,8 @@
+
+
 use sea_orm::DatabaseConnection;
 
-use crate::config::Configuration;
-use crate::openid::SteamOpenId;
+use crate::{config::Configuration, openid::SteamOpenId};
 
 #[derive(Clone)]
 pub struct AppState {

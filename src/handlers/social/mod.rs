@@ -1,11 +1,9 @@
-use crate::services::social::Service as SocialService;
-use crate::{errors::AppError, state::AppState};
-use axum::Router;
+use crate::{errors::AppError, services::social::Service as SocialService, state::AppState};
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
     routing::get,
-    Json,
+    Json, Router,
 };
 use entity::social::Model as SocialModel;
 

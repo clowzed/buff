@@ -4,7 +4,10 @@ pub mod prelude;
 
 pub mod admin;
 pub mod blacklisted;
+pub mod chat;
 pub mod currency_rate;
+pub mod image;
+pub mod message;
 pub mod order;
 pub mod requisites;
 pub mod review;

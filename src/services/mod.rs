@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod auth;
+pub mod chat;
 pub mod currency;
 pub mod orders;
 pub mod requisites;

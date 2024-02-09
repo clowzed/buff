@@ -1,17 +1,38 @@
-use crate::extractors::admin_jwt::ModeratorAuthJWT;
-use crate::services::admin::moderators::AssignModeratorParameters;
-use crate::services::admin::moderators::CreateModeratorParameters;
-use crate::services::admin::moderators::Service as AdminService;
-use crate::services::admin::moderators::UnassignModeratorParameters;
-use crate::Order;
-use axum::extract::Path;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::Json;
-use axum::{extract::State, response::Response};
-use entity::admin::Model as AdminModel;
-use sea_orm::TransactionTrait;
+use crate::{
+    extractors::admin_jwt::ModeratorAuthJWT,
+    services::{
+        admin::moderators::{
+            AssignModeratorParameters, CreateModeratorParameters, Service as AdminService,
+            UnassignModeratorParameters,
+        },
+        auth::{ResetPasswordParameters, Service as AuthService},
+        chat::{GetChatParameters, SendMessageParameters, Sender, Service as ChatService},
+    },
+    Order,
+};
+use axum::{
+    body::{Body, Bytes},
+    extract::{Path, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
+use chrono::NaiveDateTime as DateTime;
+use entity::image::Entity as ImageEntity;
+use entity::message::Entity as MessageEntity;
+use entity::{
+    admin::Model as AdminModel,
+    chat::{Entity as ChatEntity, Model as ChatModel},
+    image::Model as ImageModel,
+    message::Model as MessageModel,
+};
+
+use redis::AsyncCommands;
+use sea_orm::{EntityTrait, TransactionTrait};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tokio_util::io::ReaderStream;
 use utoipa::ToSchema;
 
 use crate::{errors::AppError, extractors::admin_jwt::AdminAuthJWT, state::AppState};
@@ -20,6 +41,13 @@ use crate::{errors::AppError, extractors::admin_jwt::AdminAuthJWT, state::AppSta
 pub struct ModeratorCredentials {
     pub login: String,
     pub password: String,
+}
+
+#[derive(TryFromMultipart, ToSchema)]
+pub struct UploadData {
+    #[schema(value_type = Vec<String>, format = Binary)]
+    pub images: Vec<FieldData<Bytes>>,
+    pub text: String,
 }
 
 impl ModeratorCredentials {
@@ -39,6 +67,78 @@ impl From<AdminModel> for ModeratorResponse {
         Self {
             id: value.id,
             login: value.login,
+        }
+    }
+}
+
+#[derive(ToSchema, Serialize, Deserialize)]
+pub struct ChatResponse {
+    id: i64,
+}
+
+impl From<ChatModel> for ChatResponse {
+    fn from(value: ChatModel) -> Self {
+        Self { id: value.id }
+    }
+}
+
+#[derive(ToSchema, Serialize, Deserialize)]
+pub struct GetChatRequest {
+    pub id: i64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct ChangePasswordRequest {
+    pub moderator_id: i64,
+    pub old_password: String,
+    pub new_password: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct SendMessageResponse {
+    pub message_id: i64,
+    pub images_ids: Vec<i64>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct Message {
+    pub id: i64,
+    pub chat_id: i64,
+    pub text: String,
+    pub sender: String,
+    pub created_at: DateTime,
+}
+
+impl From<MessageModel> for Message {
+    fn from(value: MessageModel) -> Self {
+        Self {
+            id: value.id,
+            chat_id: value.chat_id,
+            text: value.text,
+            sender: serde_json::to_string(&value.sender).unwrap(),
+            created_at: value.created_at,
+        }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct ChatHistory {
+    messages: Vec<(Message, Vec<i64>)>,
+}
+impl From<Vec<(MessageModel, Vec<ImageModel>)>> for ChatHistory {
+    fn from(value: Vec<(MessageModel, Vec<ImageModel>)>) -> Self {
+        Self {
+            messages: value
+                .into_iter()
+                .map(|(message, images)| {
+                    {
+                        (
+                            Into::<Message>::into(message),
+                            images.into_iter().map(|image| image.id).collect::<Vec<_>>(),
+                        )
+                    }
+                })
+                .collect::<Vec<_>>(),
         }
     }
 }
@@ -221,15 +321,9 @@ pub async fn unassign_moderator(
         (status = 400, description = "Bad request",                        body = Details),
         (status = 401, description = "Unauthorized",                       body = Details),
         (status = 500, description = "Internal Server Error",              body = Details),
-    ),
-    security(
-        ("jwt_admin" = [])
     )
 )]
-pub async fn list_moderators(
-    State(app_state): State<Arc<AppState>>,
-    AdminAuthJWT(_admin): AdminAuthJWT,
-) -> Response {
+pub async fn list_moderators(State(app_state): State<Arc<AppState>>) -> Response {
     match AdminService::moderators(app_state.database_connection()).await {
         Ok(moderators) => Json(
             moderators
@@ -302,4 +396,314 @@ impl From<AdminModel> for ModeratorOrAdminInfo {
 )]
 pub async fn self_info(ModeratorAuthJWT(moderator): ModeratorAuthJWT) -> impl IntoResponse {
     Json(Into::<ModeratorOrAdminInfo>::into(moderator))
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/admin/moderator/password",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 200, description = "Password was successfully changed"),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 500, description = "Internal server error",              body = Details),
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn change_password(
+    State(app_state): State<Arc<AppState>>,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
+    Json(payload): Json<ChangePasswordRequest>,
+) -> Response {
+    match app_state.database_connection().begin().await {
+        Ok(connection) => {
+            let parameters = ResetPasswordParameters {
+                moderator_id: moderator.id,
+                old_password: &payload.old_password,
+                new_password: &payload.new_password,
+            };
+            if let Err(cause) = AuthService::reset_password(parameters, &connection).await {
+                return Into::<AppError>::into(cause).into_response();
+            }
+            if let Err(cause) = connection.commit().await {
+                return AppError::InternalServerError(Box::new(cause)).into_response();
+            }
+            (StatusCode::OK).into_response()
+        }
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/admin/moderator/chat",
+    request_body = GetChatRequest,
+    responses(
+        (status = 200, description = "Chat was successfully retrieved",    body = ChatResponse),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 500, description = "Internal server error",              body = Details),
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn chat(
+    State(app_state): State<Arc<AppState>>,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
+    Json(payload): Json<GetChatRequest>,
+) -> Response {
+    let params = GetChatParameters {
+        moderator_id: moderator.id,
+        steam_id: payload.id,
+    };
+
+    match ChatService::chat(params, app_state.database_connection()).await {
+        Ok(chat) => Json(Into::<ChatResponse>::into(chat)).into_response(),
+        Err(cause) => Into::<AppError>::into(cause).into_response(),
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/admin/moderator/chat/{id}/message",
+    request_body = UploadData,
+    params(("id" = i64, Path, description = "Chat id")),
+
+    responses(
+        (status = 200, description = "Message was successfully sent",    body = SendMessageResponse),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 500, description = "Internal server error",              body = Details),
+        (status = 403, description = "Moderator is not a member of this chat"),
+        (status = 404, description = "Chat  was not found"),
+
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn send_message(
+    State(app_state): State<Arc<AppState>>,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
+    Path(chat_id): Path<i64>,
+    TypedMultipart(UploadData { images, text }): TypedMultipart<UploadData>,
+) -> Response {
+    match app_state.database_connection().begin().await {
+        Ok(connection) => {
+            let _ = match ChatEntity::find_by_id(chat_id).one(&connection).await {
+                Ok(Some(chat)) => match chat.moderator_id == moderator.id {
+                    true => chat,
+                    false => return StatusCode::FORBIDDEN.into_response(),
+                },
+                Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+                Err(_cause) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            };
+
+            let params = SendMessageParameters {
+                folder: app_state.configuration().upload_folder().clone(),
+                chat_id,
+                sender: Sender::Moderator,
+                text,
+                images: &images,
+            };
+
+            match ChatService::send_message(params, &connection).await {
+                Ok(res) => {
+                    if let Err(cause) = connection.commit().await {
+                        return AppError::InternalServerError(Box::new(cause)).into_response();
+                    }
+
+                    match app_state.redis_client().get_async_connection().await {
+                        Ok(mut connection) => {
+                            let _: Result<(), _> = connection
+                                .publish(
+                                    format!("chat-{}", chat_id),
+                                    serde_json::to_string(&res.0).unwrap(),
+                                )
+                                .await;
+                        }
+                        Err(cause) => {
+                            tracing::warn!(%cause, "Failed to connect to redis!");
+                        }
+                    };
+
+                    Json(SendMessageResponse {
+                        message_id: res.0.id,
+                        images_ids: res.1,
+                    })
+                    .into_response()
+                }
+                Err(cause) => Into::<AppError>::into(cause).into_response(),
+            }
+        }
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/admin/moderator/chat/{id}/history",
+    params(("id" = i64, Path, description = "Chat id")),
+
+    responses(
+        (status = 200, description = "History was successfully retrieved", body = ChatHistory),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 500, description = "Internal server error",              body = Details),
+        (status = 403, description = "Moderator is not a member of this chat"),
+        (status = 404, description = "Chat was not found"),
+
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn history(
+    State(app_state): State<Arc<AppState>>,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
+    Path(chat_id): Path<i64>,
+) -> Response {
+    match app_state.database_connection().begin().await {
+        Ok(connection) => {
+            let chat = match ChatEntity::find_by_id(chat_id).one(&connection).await {
+                Ok(Some(chat)) => match chat.moderator_id == moderator.id {
+                    true => chat,
+                    false => return StatusCode::FORBIDDEN.into_response(),
+                },
+                Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+                Err(_cause) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            };
+
+            let resp = match ChatService::history(chat.id, &connection).await {
+                Ok(res) => Json(Into::<ChatHistory>::into(res)).into_response(),
+                Err(cause) => return Into::<AppError>::into(cause).into_response(),
+            };
+
+            if let Err(cause) = connection.commit().await {
+                return AppError::InternalServerError(Box::new(cause)).into_response();
+            }
+
+            resp
+        }
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
+use axum::extract::{
+    ws::{Message as WsMessage, WebSocket},
+    WebSocketUpgrade,
+};
+use futures_util::{sink::SinkExt, stream::StreamExt};
+use tokio::sync::mpsc;
+
+pub async fn websocket_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<Arc<AppState>>,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
+    Path(chat_id): Path<i64>,
+) -> Response {
+    match ChatEntity::find_by_id(chat_id)
+        .one(state.database_connection())
+        .await
+    {
+        Ok(Some(chat)) => {
+            if chat.moderator_id != moderator.id {
+                return StatusCode::FORBIDDEN.into_response();
+            }
+        }
+        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    };
+
+    ws.on_upgrade(move |socket| handle_socket(socket, state, chat_id))
+}
+
+async fn handle_socket(socket: WebSocket, state: Arc<AppState>, chat_id: i64) {
+    let (tx, mut rx) = mpsc::channel(10);
+    let (mut sender, _) = socket.split();
+
+    tokio::spawn(async move {
+        let mut connection = state.redis_client().get_connection().unwrap();
+        let mut pubsub = connection.as_pubsub();
+        pubsub.subscribe(format!("chat-{}", chat_id)).unwrap();
+
+        while let Ok(msg) = pubsub.get_message() {
+            if let Ok(payload) = msg.get_payload() {
+                if tx.send(payload).await.is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    // Sends Order component
+    while let Some(msg) = rx.recv().await {
+        if sender.send(WsMessage::Text(msg)).await.is_err() {
+            break;
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/user/chat/{id}/image/{id}",
+    params(("id" = (i64, i64), Path, description = "Chat id and image id")),
+
+    responses(
+        (status = 200, description = "Image was successfully retrieved"),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 500, description = "Internal server error",              body = Details),
+        (status = 403, description = "Moderator is not a member of this chat"),
+        (status = 404, description = "Chat was not found"),
+
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn image(
+    State(app_state): State<Arc<AppState>>,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
+    Path((chat_id, image_id)): Path<(i64, i64)>,
+) -> Response {
+    let _chat = match ChatEntity::find_by_id(chat_id)
+        .one(app_state.database_connection())
+        .await
+    {
+        Ok(Some(chat)) => match chat.moderator_id == moderator.id {
+            true => chat,
+            false => return StatusCode::FORBIDDEN.into_response(),
+        },
+        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Err(_cause) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    };
+
+    let image = match ImageEntity::find_by_id(image_id)
+        .one(app_state.database_connection())
+        .await
+    {
+        Ok(Some(image)) => image,
+        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Err(cause) => return AppError::InternalServerError(Box::new(cause)).into_response(),
+    };
+
+    let message = match MessageEntity::find_by_id(image.message_id)
+        .one(app_state.database_connection())
+        .await
+    {
+        Ok(Some(message)) => message,
+        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Err(cause) => return AppError::InternalServerError(Box::new(cause)).into_response(),
+    };
+
+    if message.chat_id != chat_id {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+
+    Body::from_stream(ReaderStream::new(
+        match tokio::fs::File::open(&image.path).await {
+            Ok(file) => file,
+            Err(_cause) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        },
+    ))
+    .into_response()
 }

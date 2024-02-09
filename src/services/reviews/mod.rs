@@ -1,16 +1,13 @@
-use crate::errors::AppError;
-use crate::errors::Details;
-use entity::review::ActiveModel as ReviewActiveModel;
-use entity::review::Entity as ReviewEntity;
-use entity::review::Model as ReviewModel;
-use entity::user::Entity as UserEntity;
-use entity::video_review::ActiveModel as VideoReviewActiveModel;
-use entity::video_review::Column::Url as VideoReviewColumnUrl;
-use entity::video_review::Entity as VideoReviewEntity;
-use entity::video_review::Model as VideoReviewModel;
-use sea_orm::prelude::*;
-use sea_orm::Set;
-use sea_orm::TransactionTrait;
+use crate::errors::{AppError, Details};
+use entity::{
+    review::{ActiveModel as ReviewActiveModel, Entity as ReviewEntity, Model as ReviewModel},
+    user::Entity as UserEntity,
+    video_review::{
+        ActiveModel as VideoReviewActiveModel, Column::Url as VideoReviewColumnUrl,
+        Entity as VideoReviewEntity, Model as VideoReviewModel,
+    },
+};
+use sea_orm::{prelude::*, Set, TransactionTrait};
 use std::fmt::Debug;
 
 #[allow(dead_code)]

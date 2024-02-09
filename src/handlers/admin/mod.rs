@@ -37,4 +37,13 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/self", get(moderators::self_info))
         .route("/social", patch(social::set_url))
         .route("/requisites", patch(requisites::set_data))
+        .route("/moderator/password", patch(moderators::change_password))
+        .route("/moderator/chat", patch(moderators::chat))
+        .route(
+            "/moderator/chat/:id/message",
+            post(moderators::send_message),
+        )
+        .route("/moderator/chat/:id/history", get(moderators::history))
+        .route("/moderator/chat/:id", get(moderators::websocket_handler))
+        .route("/moderator/chat/:id/image/:id", get(moderators::image))
 }

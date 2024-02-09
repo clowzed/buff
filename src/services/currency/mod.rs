@@ -1,11 +1,9 @@
 use crate::errors::AppError;
-use entity::currency_rate::ActiveModel as CurrencyRateActiveModel;
-use entity::currency_rate::Column as CurrencyRateColumn;
-use entity::currency_rate::Entity as CurrencyRateEntity;
-use entity::currency_rate::Model as CurrencyRateModel;
-use sea_orm::prelude::*;
-use sea_orm::Set;
-use sea_orm::TransactionTrait;
+use entity::currency_rate::{
+    ActiveModel as CurrencyRateActiveModel, Column as CurrencyRateColumn,
+    Entity as CurrencyRateEntity, Model as CurrencyRateModel,
+};
+use sea_orm::{prelude::*, Set, TransactionTrait};
 use std::fmt::Debug;
 
 #[allow(dead_code)]

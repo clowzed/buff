@@ -1,38 +1,29 @@
-use crate::handlers::admin::blacklist::{BlacklistUserRequest, UnblacklistUserRequest};
-use crate::handlers::admin::currency::SetRateRequest;
-use crate::handlers::admin::currency::{CreateCurrencyRequest, Currency};
-use crate::handlers::admin::moderators::{AssignModeratorRequest, UnassignModeratorRequest};
-use crate::handlers::admin::moderators::{
-    ModeratorCredentials, ModeratorOrAdminInfo, ModeratorResponse,
+use crate::handlers::{
+    admin::{
+        blacklist::*, currency::*, moderators::*, orders::TimeBounds,
+        requisites::SetRequisitesDataRequest, reviews::*, social::SetSocialUrlRequest,
+    },
+    auth::{
+        admins::*,
+        users::{JwtResponse, LoginLinkResponse},
+    },
+    orders::*,
+    requisites::Requisites,
+    reviews::users::{AddReviewRequest, Review, VideoReview},
+    social::Social,
+    status::users::{StatusRequest, StatusResponse, UserStatus},
+    user::{Bounds, EmailForm, TopUser, TradeUrlForm, User},
 };
-use crate::handlers::admin::orders::TimeBounds;
-use crate::handlers::admin::requisites::SetRequisitesDataRequest;
-use crate::handlers::admin::reviews::UpdateVideoReviewRequest;
-use crate::handlers::admin::reviews::{AddVideoReviewRequest, RemoveVideoReviewRequest};
-use crate::handlers::admin::social::SetSocialUrlRequest;
-use crate::handlers::auth::admins::{AdminLoginResponse, Credentials};
-use crate::handlers::auth::users::{JwtResponse, LoginLinkResponse};
-use crate::handlers::orders::*;
-use crate::handlers::requisites::Requisites;
-use crate::handlers::reviews::users::AddReviewRequest;
-use crate::handlers::reviews::users::Review;
-use crate::handlers::reviews::users::VideoReview;
-use crate::handlers::social::Social;
-use crate::handlers::status::users::StatusRequest;
-use crate::handlers::status::users::StatusResponse;
-use crate::handlers::status::users::UserStatus;
-use crate::handlers::user::{Bounds, EmailForm, TopUser, TradeUrlForm, User};
 use config::{Configuration, ConfigurationReader, EnvConfigurationReader};
-use entity::admin::ActiveModel as AdminActiveModel;
-use entity::admin::Column as AdminColumn;
-use entity::admin::Entity as AdminEntity;
-use entity::requisites::ActiveModel as RequisitesActiveModel;
-use entity::requisites::Column as RequisitesColumn;
-use entity::requisites::Entity as RequisitesEntity;
-use entity::sea_orm_active_enums::Role;
-use entity::social::ActiveModel as SocialActiveModel;
-use entity::social::Column as SocialColumn;
-use entity::social::Entity as SocialEntity;
+use entity::{
+    admin::{ActiveModel as AdminActiveModel, Column as AdminColumn, Entity as AdminEntity},
+    requisites::{
+        ActiveModel as RequisitesActiveModel, Column as RequisitesColumn,
+        Entity as RequisitesEntity,
+    },
+    sea_orm_active_enums::Role,
+    social::{ActiveModel as SocialActiveModel, Column as SocialColumn, Entity as SocialEntity},
+};
 use errors::Details;
 use migration::{Migrator, MigratorTrait};
 use openid::VerifyForm;
@@ -40,12 +31,13 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectOptions, Database, EntityTrait, QueryFilter, Set,
 };
 use state::AppState;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::layer::SubscriberExt;
-use utoipa::openapi::security::{ApiKey, ApiKeyValue, HttpAuthScheme, HttpBuilder, SecurityScheme};
-use utoipa::{Modify, OpenApi};
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, HttpAuthScheme, HttpBuilder, SecurityScheme},
+    Modify, OpenApi,
+};
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
@@ -76,6 +68,13 @@ async fn main() {
             return;
         }
     };
+    if !configuration.upload_folder().exists() {
+        std::fs::create_dir(configuration.upload_folder()).unwrap();
+    }
+
+    if configuration.upload_folder().is_file() {
+        panic!("Upload folder is a file!");
+    }
 
     //* Connecting to redis
     let redis_client = match redis::Client::open(configuration.redis_url()) {
@@ -148,6 +147,13 @@ async fn main() {
             handlers::requisites::requisites,
             handlers::admin::requisites::set_data,
             handlers::admin::reviews::update_video_review,
+            handlers::admin::moderators::change_password,
+            handlers::admin::moderators::chat,
+            handlers::admin::moderators::send_message,
+            handlers::admin::moderators::image,
+            handlers::user::image,
+            handlers::user::chat,
+            handlers::user::send_message,
         ),
         components(
             schemas(
@@ -167,7 +173,8 @@ async fn main() {
                     Currency, CreateCurrencyRequest,
                     SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
                     SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites,
-                    UpdateVideoReviewRequest
+                    UpdateVideoReviewRequest, ChangePasswordRequest, GetChatRequest, ChatResponse,
+                    SendMessageResponse, ChatHistory
             )
         ),
         modifiers(&SecurityAddon),

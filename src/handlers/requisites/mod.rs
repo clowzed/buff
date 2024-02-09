@@ -1,11 +1,11 @@
-use crate::services::requisites::Service as RequisitesService;
-use crate::{errors::AppError, state::AppState};
-use axum::Router;
+use crate::{
+    errors::AppError, services::requisites::Service as RequisitesService, state::AppState,
+};
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
     routing::get,
-    Json,
+    Json, Router,
 };
 use entity::requisites::Model as RequisitesModel;
 

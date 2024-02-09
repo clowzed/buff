@@ -1,22 +1,16 @@
-use std::fmt::Debug;
-
 use crate::errors::AppError;
-use argon2::Argon2;
-use argon2::PasswordHash;
-use argon2::PasswordVerifier;
-use chrono::Duration;
-use chrono::Utc;
-
-use entity::admin::Column as AdminColumn;
-use entity::admin::Entity as AdminEntity;
-use entity::admin::Model as AdminModel;
-use jsonwebtoken::DecodingKey;
-use jsonwebtoken::Validation;
-use sea_orm::prelude::*;
-use sea_orm::ColumnTrait;
-use sea_orm::ConnectionTrait;
-use sea_orm::TransactionTrait;
+use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use chrono::{Duration, Utc};
+use entity::admin::{
+    ActiveModel as AdminActiveModel, Column as AdminColumn, Entity as AdminEntity,
+    Model as AdminModel,
+};
+use jsonwebtoken::{DecodingKey, Validation};
+use rand_core::OsRng;
+use sea_orm::{prelude::*, ColumnTrait, ConnectionTrait, Set, TransactionTrait};
+use std::fmt::Debug;
 use thiserror::Error;
+
 pub type Jwt = String;
 
 #[derive(Error, Debug)]
@@ -27,6 +21,8 @@ pub enum ServiceError {
     Unauthorized,
     #[error(transparent)]
     DbErr(#[from] sea_orm::DbErr),
+    #[error(transparent)]
+    PasswordHashError(#[from] argon2::password_hash::Error),
 }
 
 impl From<ServiceError> for AppError {
@@ -35,6 +31,9 @@ impl From<ServiceError> for AppError {
             ServiceError::JWTError(cause) => AppError::JwtError(Box::new(cause)),
             ServiceError::Unauthorized => AppError::Unauthorized,
             ServiceError::DbErr(cause) => AppError::InternalServerError(Box::new(cause)),
+            ServiceError::PasswordHashError(cause) => {
+                AppError::InternalServerError(Box::new(cause))
+            }
         }
     }
 }
@@ -77,6 +76,20 @@ pub struct GenerateAdminJwtParameters<'a> {
     pub secret: &'a str,
 }
 
+pub struct ResetPasswordParameters<'a> {
+    pub moderator_id: i64,
+    pub old_password: &'a str,
+    pub new_password: &'a str,
+}
+
+impl Debug for ResetPasswordParameters<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResetPasswordParameters")
+            .field("moderator_id", &self.moderator_id)
+            .finish()
+    }
+}
+
 impl Service {
     #[tracing::instrument(skip(jwt_params))]
     pub fn check(jwt_params: JwtCheckParams<'_>) -> Result<TokenClaims, ServiceError> {
@@ -95,7 +108,7 @@ impl Service {
     pub fn user_jwt(parameters: GenerateUserJwtParameters<'_>) -> Result<Jwt, ServiceError> {
         let claims: TokenClaims = TokenClaims {
             sub: parameters.steam_id,
-            exp: (Utc::now() + Duration::minutes(10)).timestamp() as u64,
+            exp: (Utc::now() + Duration::minutes(60)).timestamp() as u64,
             iat: Utc::now().timestamp() as u64,
         };
 
@@ -110,7 +123,7 @@ impl Service {
     pub fn admin_jwt(parameters: GenerateAdminJwtParameters<'_>) -> Result<Jwt, ServiceError> {
         let claims: TokenClaims = TokenClaims {
             sub: parameters.admin_id,
-            exp: (Utc::now() + Duration::minutes(10)).timestamp() as u64,
+            exp: (Utc::now() + Duration::minutes(60)).timestamp() as u64,
             iat: Utc::now().timestamp() as u64,
         };
 
@@ -143,6 +156,48 @@ impl Service {
                 .verify_password(credentials.password.as_bytes(), &parsed_hash)
             {
                 Ok(()) => Ok(admin),
+                Err(_) => Err(ServiceError::Unauthorized),
+            },
+
+            Err(_) => Err(ServiceError::Unauthorized),
+        }
+    }
+
+    #[tracing::instrument(skip(connection))]
+    pub async fn reset_password<T>(
+        parameters: ResetPasswordParameters<'_>,
+        connection: &T,
+    ) -> Result<(), ServiceError>
+    where
+        T: ConnectionTrait + TransactionTrait,
+    {
+        let admin = match AdminEntity::find_by_id(parameters.moderator_id)
+            .one(connection)
+            .await?
+        {
+            Some(admin) => Ok(admin),
+            None => Err(ServiceError::Unauthorized),
+        }?;
+
+        match PasswordHash::new(&admin.password) {
+            Ok(parsed_hash) => match Argon2::default()
+                .verify_password(parameters.old_password.as_bytes(), &parsed_hash)
+            {
+                Ok(()) => {
+                    let salt = SaltString::generate(&mut OsRng);
+
+                    let hashed_password = Argon2::default()
+                        .hash_password(parameters.new_password.as_bytes(), &salt)?
+                        .to_string();
+
+                    let mut admin_to_be_updated: AdminActiveModel = admin.into();
+
+                    admin_to_be_updated.password = Set(hashed_password);
+
+                    admin_to_be_updated.update(connection).await?;
+
+                    Ok(())
+                }
                 Err(_) => Err(ServiceError::Unauthorized),
             },
 

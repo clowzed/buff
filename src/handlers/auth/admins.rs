@@ -1,14 +1,18 @@
-use axum::{extract::State, response::IntoResponse, response::Response, routing::post, Json};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+    routing::post,
+    Json,
+};
 use sea_orm::TransactionTrait;
 use utoipa::ToSchema;
 
-use crate::services::auth::AdminCredentials;
-use crate::services::auth::GenerateAdminJwtParameters;
-use crate::services::auth::Jwt;
-use crate::services::auth::Service as AuthService;
-use crate::{errors::AppError, state::AppState};
-use std::fmt::Debug;
-use std::sync::Arc;
+use crate::{
+    errors::AppError,
+    services::auth::{AdminCredentials, GenerateAdminJwtParameters, Jwt, Service as AuthService},
+    state::AppState,
+};
+use std::{fmt::Debug, sync::Arc};
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct Credentials {

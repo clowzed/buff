@@ -1,11 +1,8 @@
 use crate::errors::AppError;
 use entity::social::ActiveModel as SocialActiveModel;
 
-use entity::social::Entity as SocialEntity;
-use entity::social::Model as SocialModel;
-use sea_orm::prelude::*;
-use sea_orm::Set;
-use sea_orm::TransactionTrait;
+use entity::social::{Column as SocialColumn, Entity as SocialEntity, Model as SocialModel};
+use sea_orm::{prelude::*, Order, QueryOrder, Set, TransactionTrait};
 use std::fmt::Debug;
 
 #[allow(dead_code)]
@@ -40,7 +37,10 @@ impl Service {
     where
         T: ConnectionTrait + TransactionTrait,
     {
-        Ok(SocialEntity::find().all(connection).await?)
+        Ok(SocialEntity::find()
+            .order_by(SocialColumn::Id, Order::Asc)
+            .all(connection)
+            .await?)
     }
 
     #[tracing::instrument(skip(connection))]

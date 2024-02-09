@@ -3,12 +3,11 @@ use crate::handlers::admin::currency::Currency;
 use crate::services::currency::Service as CurrencyService;
 
 use crate::{errors::AppError, state::AppState};
-use axum::extract::Path;
-use axum::routing::get;
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
+    routing::get,
     Json,
 };
 

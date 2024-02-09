@@ -1,10 +1,13 @@
-use crate::services::currency::CreateCurrencyRateParameters;
-use crate::services::currency::Service as CurrencyService;
-use crate::services::currency::SetCurrencyRateParameters;
-use crate::{errors::AppError, extractors::admin_jwt::AdminAuthJWT, state::AppState};
-use axum::extract::Path;
+use crate::{
+    errors::AppError,
+    extractors::admin_jwt::AdminAuthJWT,
+    services::currency::{
+        CreateCurrencyRateParameters, Service as CurrencyService, SetCurrencyRateParameters,
+    },
+    state::AppState,
+};
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
