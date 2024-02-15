@@ -54,6 +54,9 @@ pub struct AddReviewParameters {
 #[derive(Debug)]
 pub struct AddVideoReviewParameters {
     pub url: String,
+    pub avatar: String,
+    pub name: String,
+    pub subscribers: String,
 }
 
 #[derive(Debug)]
@@ -141,6 +144,9 @@ impl Service {
             None => {
                 let review_to_be_inserted = VideoReviewActiveModel {
                     url: Set(review.url),
+                    avatar: Set(review.avatar),
+                    name: Set(review.name),
+                    subscribers: Set(review.subscribers),
                     ..Default::default()
                 };
 

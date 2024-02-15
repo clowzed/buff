@@ -40,7 +40,12 @@ pub async fn add_video_review(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<AddVideoReviewRequest>,
 ) -> Response {
-    let review_to_be_added = AddVideoReviewParameters { url: payload.url };
+    let review_to_be_added = AddVideoReviewParameters {
+        url: payload.url,
+        avatar: payload.avatar,
+        name: payload.name,
+        subscribers: payload.subscribers,
+    };
 
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
