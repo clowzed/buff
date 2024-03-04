@@ -9,7 +9,7 @@ use crate::handlers::{
     },
     orders::*,
     requisites::Requisites,
-    reviews::users::{AddReviewRequest, Review, VideoReview},
+    reviews::users::{AddReviewRequest, Bounds as ReviewsBounds, Review, VideoReview},
     social::Social,
     status::users::{StatusRequest, StatusResponse, UserStatus},
     user::{Bounds, EmailForm, TopUser, TradeUrlForm, User},
@@ -52,6 +52,8 @@ mod state;
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
+
     //* Setting up tracing
     let stdout_log = tracing_subscriber::fmt::layer().pretty();
     let subscriber = tracing_subscriber::Registry::default()
@@ -174,7 +176,7 @@ async fn main() {
                     SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
                     SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites,
                     UpdateVideoReviewRequest, ChangePasswordRequest, GetChatRequest, ChatResponse,
-                    SendMessageResponse, ChatHistory
+                    SendMessageResponse, ChatHistory, ReviewsBounds
             )
         ),
         modifiers(&SecurityAddon),

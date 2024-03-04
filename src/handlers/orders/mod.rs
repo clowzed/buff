@@ -78,9 +78,9 @@ impl From<OrderModel> for Order {
         (status = 401, description = "Unauthorized",                       body = Details),
         (status = 500, description = "Internal Server Error",              body = Details),
     ),
-    security(
-        ("jwt_user" = [])
-    )
+   security(
+       ("jwt_user" = [])
+   )
 )]
 #[tracing::instrument(skip(app_state))]
 pub async fn create_order(

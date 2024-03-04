@@ -4,7 +4,7 @@ use crate::{
     services::reviews::{AddReviewParameters, Service as ReviewsService},
 };
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -13,9 +13,15 @@ use axum::{
 use chrono::NaiveDateTime as DateTime;
 use entity::{review::Model as ReviewModel, video_review::Model as VideoReviewModel};
 use std::sync::Arc;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::state::AppState;
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug, IntoParams)]
+pub struct Bounds {
+    limit: u64,
+    offset: u64,
+}
 
 #[utoipa::path(
     get,
@@ -23,11 +29,20 @@ use crate::state::AppState;
     responses(
         (status = 200, description = "Reviews were successfully retrieved",  body = [Review]),
         (status = 500, description = "Internal Server Error",                body = Details),
+    ),
+    params(
+        Bounds
+
     )
 )]
 #[tracing::instrument(skip(app_state))]
-pub async fn all_users_reviews(State(app_state): State<Arc<AppState>>) -> Response {
-    match ReviewsService::users_all(app_state.database_connection()).await {
+pub async fn all_users_reviews(
+    State(app_state): State<Arc<AppState>>,
+    Query(bounds): Query<Bounds>,
+) -> Response {
+    match ReviewsService::users_all(bounds.limit, bounds.offset, app_state.database_connection())
+        .await
+    {
         Ok(reviews) => Json(
             reviews
                 .into_iter()

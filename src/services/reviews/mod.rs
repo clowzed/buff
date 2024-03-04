@@ -7,7 +7,7 @@ use entity::{
         Entity as VideoReviewEntity, Model as VideoReviewModel,
     },
 };
-use sea_orm::{prelude::*, Set, TransactionTrait};
+use sea_orm::{prelude::*, QuerySelect, Set, TransactionTrait};
 use std::fmt::Debug;
 
 #[allow(dead_code)]
@@ -111,11 +111,19 @@ impl Service {
     }
 
     #[tracing::instrument(skip(connection))]
-    pub async fn users_all<T>(connection: &T) -> Result<Vec<ReviewModel>, ServiceError>
+    pub async fn users_all<T>(
+        limit: u64,
+        offset: u64,
+        connection: &T,
+    ) -> Result<Vec<ReviewModel>, ServiceError>
     where
         T: ConnectionTrait + TransactionTrait,
     {
-        Ok(ReviewEntity::find().all(connection).await?)
+        Ok(ReviewEntity::find()
+            .limit(limit)
+            .offset(offset)
+            .all(connection)
+            .await?)
     }
 
     #[tracing::instrument(skip(connection))]

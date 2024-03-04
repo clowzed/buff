@@ -62,7 +62,7 @@ impl MigrationTrait for Migration {
                             .from(Order::Table, Order::ModeratorId)
                             .to(Admin::Table, Admin::Id),
                     )
-                    .col(ColumnDef::new(Order::Amount).money().not_null())
+                    .col(ColumnDef::new(Order::Amount).decimal().not_null())
                     .col(
                         ColumnDef::new(Order::FixedCurrencyRate)
                             .decimal()

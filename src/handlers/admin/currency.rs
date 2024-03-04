@@ -50,6 +50,9 @@ impl From<RateModel> for Currency {
         (status = 401, description = "Unauthorized", body = Details),
         (status = 500, description = "Internal Server Error", body = Details),
     ),
+    security(
+        ("jwt_admin" = [])
+    )
 )]
 pub async fn create_currency(
     State(app_state): State<Arc<AppState>>,
