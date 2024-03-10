@@ -13,7 +13,7 @@ use entity::{
     sea_orm_active_enums::{Role, Status},
 };
 use rand_core::OsRng;
-use sea_orm::{prelude::*, Set, TransactionTrait};
+use sea_orm::{prelude::*, QueryOrder, Set, TransactionTrait};
 
 use crate::errors::AppError;
 
@@ -260,5 +260,16 @@ impl Service {
         }?;
 
         Ok(moderator.find_related(OrderEntity).all(connection).await?)
+    }
+
+    pub async fn unassigned_orders<T>(connection: &T) -> Result<Vec<OrderModel>, ServiceError>
+    where
+        T: TransactionTrait + ConnectionTrait,
+    {
+        Ok(OrderEntity::find()
+            .filter(OrderColumn::ModeratorId.is_null())
+            .order_by_desc(OrderColumn::CreatedAt)
+            .all(connection)
+            .await?)
     }
 }

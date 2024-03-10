@@ -87,7 +87,6 @@ pub struct GetChatRequest {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct ChangePasswordRequest {
-    pub moderator_id: i64,
     pub old_password: String,
     pub new_password: String,
 }
@@ -355,6 +354,36 @@ pub async fn list_moderators_orders(
     match AdminService::moderators_orders(moderator.id, app_state.database_connection()).await {
         Ok(moderators) => Json(
             moderators
+                .into_iter()
+                .map(Into::<Order>::into)
+                .collect::<Vec<_>>(),
+        )
+        .into_response(),
+        Err(cause) => Into::<AppError>::into(cause).into_response(),
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/admin/moderator/unassigned-orders",
+    responses(
+        (status = 200, description = "Orders were successfully retrieved", body = [Order]),
+        (status = 400, description = "Bad request",                        body = Details),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 404, description = "Moderator was not found",            body = Details),
+        (status = 500, description = "Internal Server Error",              body = Details),
+    ),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn list_unassigned_orders(
+    State(app_state): State<Arc<AppState>>,
+    ModeratorAuthJWT(_moderator): ModeratorAuthJWT,
+) -> Response {
+    match AdminService::unassigned_orders(app_state.database_connection()).await {
+        Ok(orders) => Json(
+            orders
                 .into_iter()
                 .map(Into::<Order>::into)
                 .collect::<Vec<_>>(),

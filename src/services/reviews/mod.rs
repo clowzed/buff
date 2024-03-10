@@ -1,13 +1,17 @@
 use crate::errors::{AppError, Details};
 use entity::{
-    review::{ActiveModel as ReviewActiveModel, Entity as ReviewEntity, Model as ReviewModel},
+    review::{
+        ActiveModel as ReviewActiveModel, Column as ReviewColumn, Entity as ReviewEntity,
+        Model as ReviewModel,
+    },
     user::Entity as UserEntity,
     video_review::{
         ActiveModel as VideoReviewActiveModel, Column::Url as VideoReviewColumnUrl,
         Entity as VideoReviewEntity, Model as VideoReviewModel,
     },
 };
-use sea_orm::{prelude::*, QuerySelect, Set, TransactionTrait};
+use migration::Query;
+use sea_orm::{prelude::*, Condition, QueryOrder, QuerySelect, Set, TransactionTrait};
 use std::fmt::Debug;
 
 #[allow(dead_code)]
@@ -120,6 +124,17 @@ impl Service {
         T: ConnectionTrait + TransactionTrait,
     {
         Ok(ReviewEntity::find()
+            .filter(
+                Condition::any().add(
+                    ReviewColumn::SteamId.not_in_subquery(
+                        Query::select()
+                            .column(entity::blacklisted::Column::SteamId)
+                            .from(entity::blacklisted::Entity)
+                            .to_owned(),
+                    ),
+                ),
+            )
+            .order_by_desc(ReviewColumn::CreatedAt)
             .limit(limit)
             .offset(offset)
             .all(connection)
@@ -235,5 +250,60 @@ impl Service {
             }
             None => Err(ServiceError::VideoReviewIdNotFound),
         }
+    }
+
+    pub async fn count<T>(connection: &T) -> Result<(u64, u64), ServiceError>
+    where
+        T: ConnectionTrait + TransactionTrait,
+    {
+        Ok((
+            ReviewEntity::find()
+                .filter(
+                    Condition::any().add(
+                        ReviewColumn::SteamId.not_in_subquery(
+                            Query::select()
+                                .column(entity::blacklisted::Column::SteamId)
+                                .from(entity::blacklisted::Entity)
+                                .to_owned(),
+                        ),
+                    ),
+                )
+                .count(connection)
+                .await?,
+            VideoReviewEntity::find()
+                .filter(
+                    Condition::any().add(
+                        ReviewColumn::SteamId.not_in_subquery(
+                            Query::select()
+                                .column(entity::blacklisted::Column::SteamId)
+                                .from(entity::blacklisted::Entity)
+                                .to_owned(),
+                        ),
+                    ),
+                )
+                .count(connection)
+                .await?,
+        ))
+    }
+
+    pub async fn five_stars<T>(connection: &T) -> Result<Vec<ReviewModel>, ServiceError>
+    where
+        T: ConnectionTrait + TransactionTrait,
+    {
+        Ok(ReviewEntity::find()
+            .filter(ReviewColumn::Stars.eq(5))
+            .filter(
+                Condition::any().add(
+                    ReviewColumn::SteamId.not_in_subquery(
+                        Query::select()
+                            .column(entity::blacklisted::Column::SteamId)
+                            .from(entity::blacklisted::Entity)
+                            .to_owned(),
+                    ),
+                ),
+            )
+            .order_by_desc(ReviewColumn::CreatedAt)
+            .all(connection)
+            .await?)
     }
 }

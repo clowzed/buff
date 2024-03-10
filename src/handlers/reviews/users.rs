@@ -12,6 +12,7 @@ use axum::{
 
 use chrono::NaiveDateTime as DateTime;
 use entity::{review::Model as ReviewModel, video_review::Model as VideoReviewModel};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use utoipa::{IntoParams, ToSchema};
 
@@ -106,6 +107,54 @@ pub async fn add_users_review(
         .await
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(cause) => Into::<AppError>::into(cause).into_response(),
+    }
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct ReviewCountResponse {
+    video_review_count: i32,
+    review_count: i32,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/review/count",
+    responses(
+        (status = 200, description = "Count was successfully retrieved", body = ReviewCountResponse),
+        (status = 500, description = "Internal Server Error",              body = Details),
+    ),
+)]
+#[tracing::instrument(skip(app_state))]
+pub async fn count_reviews(State(app_state): State<Arc<AppState>>) -> Response {
+    match ReviewsService::count(app_state.database_connection()).await {
+        Ok((review_count, video_review_count)) => Json(ReviewCountResponse {
+            video_review_count: video_review_count as i32,
+            review_count: review_count as i32,
+        })
+        .into_response(),
+        Err(cause) => Into::<AppError>::into(cause).into_response(),
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/review/five-stars",
+    responses(
+        (status = 200, description = "Reviews were successfully retrieved", body = [Review]),
+        (status = 500, description = "Internal Server Error",              body = Details),
+    ),
+)]
+#[tracing::instrument(skip(app_state))]
+pub async fn five_stars(State(app_state): State<Arc<AppState>>) -> Response {
+    match ReviewsService::five_stars(app_state.database_connection()).await {
+        Ok(reviews) => Json(
+            reviews
+                .into_iter()
+                .map(Into::<Review>::into)
+                .collect::<Vec<_>>(),
+        )
+        .into_response(),
         Err(cause) => Into::<AppError>::into(cause).into_response(),
     }
 }

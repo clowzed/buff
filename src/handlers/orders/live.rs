@@ -35,7 +35,6 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         }
     });
 
-    // Sends Order component
     while let Some(msg) = rx.recv().await {
         if sender.send(Message::Text(msg)).await.is_err() {
             break;

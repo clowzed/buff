@@ -9,7 +9,9 @@ use crate::handlers::{
     },
     orders::*,
     requisites::Requisites,
-    reviews::users::{AddReviewRequest, Bounds as ReviewsBounds, Review, VideoReview},
+    reviews::users::{
+        AddReviewRequest, Bounds as ReviewsBounds, Review, ReviewCountResponse, VideoReview,
+    },
     social::Social,
     status::users::{StatusRequest, StatusResponse, UserStatus},
     user::{Bounds, EmailForm, TopUser, TradeUrlForm, User},
@@ -128,6 +130,8 @@ async fn main() {
             handlers::admin::orders::finish_order_by_id,
             handlers::reviews::users::all_users_reviews,
             handlers::reviews::users::all_video_reviews,
+            handlers::reviews::users::count_reviews,
+            handlers::reviews::users::five_stars,
             handlers::admin::blacklist::unblacklist_user,
             handlers::admin::moderators::list_moderators,
             handlers::admin::moderators::assign_moderator,
@@ -137,6 +141,7 @@ async fn main() {
             handlers::admin::reviews::remove_video_review,
             handlers::admin::moderators::unassign_moderator,
             handlers::admin::moderators::list_moderators_orders,
+            handlers::admin::moderators::list_unassigned_orders,
             handlers::admin::currency::create_currency,
             handlers::admin::currency::set_currency_rate_by_id,
             handlers::admin::currency::delete_currency_rate_by_id,
@@ -176,7 +181,7 @@ async fn main() {
                     SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
                     SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites,
                     UpdateVideoReviewRequest, ChangePasswordRequest, GetChatRequest, ChatResponse,
-                    SendMessageResponse, ChatHistory, ReviewsBounds
+                    SendMessageResponse, ChatHistory, ReviewsBounds, ReviewCountResponse
             )
         ),
         modifiers(&SecurityAddon),
