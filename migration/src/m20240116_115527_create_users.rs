@@ -19,6 +19,12 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(User::Email).string())
                     .col(ColumnDef::new(User::TradeUrl).string())
+                    .col(
+                        ColumnDef::new(User::RegisteredAt)
+                            .date_time()
+                            .not_null()
+                            .default(Expr::current_timestamp()),
+                    )
                     .to_owned(),
             )
             .await
@@ -37,4 +43,5 @@ pub enum User {
     SteamId,
     Email,
     TradeUrl,
+    RegisteredAt,
 }

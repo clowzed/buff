@@ -17,6 +17,7 @@ use axum::{
     Json, Router,
 };
 use axum_typed_multipart::TypedMultipart;
+use chrono::NaiveDateTime;
 use entity::{
     chat::Entity as ChatEntity, image::Entity as ImageEntity, message::Entity as MessageEntity,
     user::Model as UserModel,
@@ -33,6 +34,7 @@ pub struct User {
     pub steam_id: i64,
     pub trade_url: Option<String>,
     pub email: Option<String>,
+    pub registered_at: NaiveDateTime,
 }
 
 impl From<UserModel> for User {
@@ -41,6 +43,7 @@ impl From<UserModel> for User {
             steam_id: value.steam_id,
             trade_url: value.trade_url,
             email: value.email,
+            registered_at: value.registered_at,
         }
     }
 }

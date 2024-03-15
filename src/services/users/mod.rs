@@ -143,4 +143,17 @@ impl Service {
             .all(connection)
             .await?)
     }
+
+    pub async fn registered_in_period<T>(
+        period: (chrono::NaiveDateTime, chrono::NaiveDateTime),
+        connection: &T,
+    ) -> Result<u64, ServiceError>
+    where
+        T: ConnectionTrait + TransactionTrait,
+    {
+        Ok(UserEntity::find()
+            .filter(UserColumn::RegisteredAt.between(period.0, period.1))
+            .count(connection)
+            .await?)
+    }
 }

@@ -9,6 +9,7 @@ pub mod orders;
 pub mod requisites;
 pub mod reviews;
 pub mod social;
+pub mod users;
 
 pub fn router() -> axum::Router<Arc<AppState>> {
     axum::Router::new()
@@ -50,4 +51,8 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/moderator/chat/:id/history", get(moderators::history))
         .route("/moderator/chat/:id", get(moderators::websocket_handler))
         .route("/moderator/chat/:id/image/:id", get(moderators::image))
+        .route(
+            "/users/registrations-in-period",
+            get(users::registrations_in_period),
+        )
 }

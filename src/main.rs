@@ -27,6 +27,8 @@ use entity::{
     social::{ActiveModel as SocialActiveModel, Column as SocialColumn, Entity as SocialEntity},
 };
 use errors::Details;
+use handlers::admin::users::RegistrationsInPeriodResponse;
+use handlers::admin::users::TimeBounds as RegisteredUsersTimeBounds;
 use migration::{Migrator, MigratorTrait};
 use openid::VerifyForm;
 use sea_orm::{
@@ -161,6 +163,7 @@ async fn main() {
             handlers::user::image,
             handlers::user::chat,
             handlers::user::send_message,
+            handlers::admin::users::registrations_in_period
         ),
         components(
             schemas(
@@ -181,7 +184,8 @@ async fn main() {
                     SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
                     SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites,
                     UpdateVideoReviewRequest, ChangePasswordRequest, GetChatRequest, ChatResponse,
-                    SendMessageResponse, ChatHistory, ReviewsBounds, ReviewCountResponse
+                    SendMessageResponse, ChatHistory, ReviewsBounds, ReviewCountResponse,
+                    RegistrationsInPeriodResponse, RegisteredUsersTimeBounds
             )
         ),
         modifiers(&SecurityAddon),

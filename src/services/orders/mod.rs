@@ -11,7 +11,7 @@ use entity::{
 
 use sea_orm::{
     prelude::Decimal, ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
-    Set, TransactionTrait, TryIntoModel,
+    QueryOrder, Set, TransactionTrait, TryIntoModel,
 };
 
 use std::fmt::Debug;
@@ -225,6 +225,7 @@ impl Service {
                     .eq(Status::Succeeded)
                     .and(OrderColumn::FinishedAt.between(period.0, period.1)),
             )
+            .order_by_desc(OrderColumn::FinishedAt)
             .all(connection)
             .await?)
     }

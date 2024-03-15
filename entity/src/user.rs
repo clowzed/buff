@@ -10,6 +10,7 @@ pub struct Model {
     pub steam_id: i64,
     pub email: Option<String>,
     pub trade_url: Option<String>,
+    pub registered_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
