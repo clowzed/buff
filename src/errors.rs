@@ -2,6 +2,7 @@ use axum::{http::StatusCode, response::IntoResponse, Json};
 use std::{
     error::Error,
     fmt::{Debug, Display},
+    num::ParseIntError,
 };
 use utoipa::ToSchema;
 
@@ -40,6 +41,8 @@ pub enum AppError {
     OrderAlreadyCanceled,
     SymbolAlreadyExists,
     NameWasNotFound,
+    #[error(transparent)]
+    ParseError(#[from] ParseIntError),
     #[error(transparent)]
     ChatServiceError(#[from] ServiceError),
 }
@@ -103,6 +106,7 @@ impl Debug for AppError {
             AppError::SymbolAlreadyExists => write!(f, "Symbol already exists"),
             AppError::NameWasNotFound => write!(f, "Name was not found"),
             AppError::ChatServiceError(error) => write!(f, "{}", error),
+            AppError::ParseError(error) => write!(f, "Failed to parse string to number. {}", error),
         }
     }
 }
@@ -160,6 +164,7 @@ impl From<&AppError> for StatusCode {
             AppError::SymbolAlreadyExists => StatusCode::CONFLICT,
             AppError::NameWasNotFound => StatusCode::NOT_FOUND,
             AppError::ChatServiceError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::ParseError(_) => StatusCode::BAD_REQUEST,
         }
     }
 }

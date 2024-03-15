@@ -90,8 +90,6 @@ impl Service {
         }
     }
 
-    //     TypedMultipart(UploadData { archive }): TypedMultipart<UploadData>,
-
     #[tracing::instrument(skip(connection, parameters))]
     pub async fn upload_images<'a, T>(
         parameters: UploadImagesData<'a>,

@@ -82,7 +82,7 @@ impl From<ChatModel> for ChatResponse {
 
 #[derive(ToSchema, Serialize, Deserialize)]
 pub struct GetChatRequest {
-    pub id: i64,
+    pub id: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -480,9 +480,13 @@ pub async fn chat(
     ModeratorAuthJWT(moderator): ModeratorAuthJWT,
     Json(payload): Json<GetChatRequest>,
 ) -> Response {
+    let steam_id: i64 = match payload.id.parse() {
+        Ok(id) => id,
+        Err(cause) => return Into::<AppError>::into(cause).into_response(),
+    };
     let params = GetChatParameters {
         moderator_id: moderator.id,
-        steam_id: payload.id,
+        steam_id,
     };
 
     match ChatService::chat(params, app_state.database_connection()).await {

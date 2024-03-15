@@ -211,8 +211,13 @@ pub async fn chat(
     AuthJWT(user): AuthJWT,
     Json(payload): Json<GetChatRequest>,
 ) -> Response {
+    let moderator_id: i64 = match payload.id.parse() {
+        Ok(id) => id,
+        Err(cause) => return Into::<AppError>::into(cause).into_response(),
+    };
+
     let params = GetChatParameters {
-        moderator_id: payload.id,
+        moderator_id: moderator_id,
         steam_id: user.steam_id,
     };
 
