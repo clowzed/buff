@@ -15,7 +15,7 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct Requisites {
-    id: i64,
+    id: String,
     name: String,
     data: Option<String>,
 }
@@ -23,7 +23,7 @@ pub struct Requisites {
 impl From<RequisitesModel> for Requisites {
     fn from(value: RequisitesModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             name: value.name,
             data: value.data,
         }

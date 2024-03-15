@@ -56,14 +56,14 @@ impl ModeratorCredentials {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct ModeratorResponse {
-    pub id: i64,
+    pub id: String,
     pub login: String,
 }
 
 impl From<AdminModel> for ModeratorResponse {
     fn from(value: AdminModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             login: value.login,
         }
     }
@@ -71,12 +71,14 @@ impl From<AdminModel> for ModeratorResponse {
 
 #[derive(ToSchema, Serialize, Deserialize)]
 pub struct ChatResponse {
-    id: i64,
+    id: String,
 }
 
 impl From<ChatModel> for ChatResponse {
     fn from(value: ChatModel) -> Self {
-        Self { id: value.id }
+        Self {
+            id: value.id.to_string(),
+        }
     }
 }
 
@@ -94,13 +96,13 @@ pub struct ChangePasswordRequest {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct SendMessageResponse {
     pub message: Message,
-    pub images_ids: Vec<i64>,
+    pub images_ids: Vec<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct Message {
-    pub id: i64,
-    pub chat_id: i64,
+    pub id: String,
+    pub chat_id: String,
     pub text: String,
     pub sender: String,
     pub created_at: DateTime,
@@ -109,8 +111,8 @@ pub struct Message {
 impl From<MessageModel> for Message {
     fn from(value: MessageModel) -> Self {
         Self {
-            id: value.id,
-            chat_id: value.chat_id,
+            id: value.id.to_string(),
+            chat_id: value.chat_id.to_string(),
             text: value.text,
             sender: serde_json::to_string(&value.sender).unwrap(),
             created_at: value.created_at,
@@ -120,7 +122,7 @@ impl From<MessageModel> for Message {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct ChatHistory {
-    messages: Vec<(Message, Vec<i64>)>,
+    messages: Vec<(Message, Vec<String>)>,
 }
 impl From<Vec<(MessageModel, Vec<ImageModel>)>> for ChatHistory {
     fn from(value: Vec<(MessageModel, Vec<ImageModel>)>) -> Self {
@@ -131,7 +133,10 @@ impl From<Vec<(MessageModel, Vec<ImageModel>)>> for ChatHistory {
                     {
                         (
                             Into::<Message>::into(message),
-                            images.into_iter().map(|image| image.id).collect::<Vec<_>>(),
+                            images
+                                .into_iter()
+                                .map(|image| image.id.to_string())
+                                .collect::<Vec<_>>(),
                         )
                     }
                 })
@@ -219,7 +224,7 @@ pub async fn delete_moderator(
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema)]
 pub struct AssignModeratorRequest {
-    order_id: i64,
+    order_id: String,
 }
 
 #[utoipa::path(
@@ -244,11 +249,18 @@ pub async fn assign_moderator(
     ModeratorAuthJWT(moderator): ModeratorAuthJWT,
     Json(payload): Json<AssignModeratorRequest>,
 ) -> Response {
+    let order_id = match payload.order_id.parse::<i64>() {
+        Ok(order_id) => order_id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
+
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
             let parameters = AssignModeratorParameters {
                 moderator_id: moderator.id,
-                order_id: payload.order_id,
+                order_id,
             };
             match AdminService::assign_moderator(parameters, &transaction).await {
                 Ok(()) => {
@@ -266,7 +278,7 @@ pub async fn assign_moderator(
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema)]
 pub struct UnassignModeratorRequest {
-    order_id: i64,
+    order_id: String,
 }
 
 #[utoipa::path(
@@ -290,11 +302,17 @@ pub async fn unassign_moderator(
     ModeratorAuthJWT(moderator): ModeratorAuthJWT,
     Json(payload): Json<UnassignModeratorRequest>,
 ) -> Response {
+    let order_id = match payload.order_id.parse::<i64>() {
+        Ok(order_id) => order_id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
             let parameters = UnassignModeratorParameters {
                 moderator_id: moderator.id,
-                order_id: payload.order_id,
+                order_id,
             };
             match AdminService::unassign_moderator(parameters, &transaction).await {
                 Ok(()) => {
@@ -395,7 +413,7 @@ pub async fn list_unassigned_orders(
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct ModeratorOrAdminInfo {
-    id: i64,
+    id: String,
     login: String,
     role: String,
 }
@@ -403,7 +421,7 @@ pub struct ModeratorOrAdminInfo {
 impl From<AdminModel> for ModeratorOrAdminInfo {
     fn from(value: AdminModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             login: value.login,
             role: serde_json::to_string(&value.role).unwrap(),
         }
@@ -546,7 +564,7 @@ pub async fn send_message(
 
                     let send = SendMessageResponse {
                         message: Into::<Message>::into(res.0),
-                        images_ids: res.1,
+                        images_ids: res.1.iter().map(|id| id.to_string()).collect(),
                     };
 
                     match app_state.redis_client().get_async_connection().await {

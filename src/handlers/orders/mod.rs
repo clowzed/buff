@@ -36,12 +36,12 @@ pub struct CreateOrderRequest {
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize)]
 pub struct Order {
-    pub id: i64,
+    pub id: String,
     pub payment_method: String,
     pub status: String,
     pub created_at: DateTime,
-    pub steam_id: i64,
-    pub moderator_id: Option<i64>,
+    pub steam_id: String,
+    pub moderator_id: Option<String>,
     #[schema(value_type = String)]
     pub amount: Decimal,
     #[schema(value_type = String)]
@@ -53,12 +53,12 @@ pub struct Order {
 impl From<OrderModel> for Order {
     fn from(value: OrderModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             payment_method: value.payment_method,
             status: serde_json::to_string(&value.status).unwrap(),
             created_at: value.created_at,
-            steam_id: value.steam_id,
-            moderator_id: value.moderator_id,
+            steam_id: value.steam_id.to_string(),
+            moderator_id: value.moderator_id.map(|id| id.to_string()),
             amount: value.amount,
             fixed_currency_rate: value.fixed_currency_rate,
             currency_symbol: value.currency_symbol,

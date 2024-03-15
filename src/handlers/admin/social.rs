@@ -20,7 +20,7 @@ use crate::state::AppState;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct SetSocialUrlRequest {
-    id: i64,
+    id: String,
     url: Option<String>,
 }
 
@@ -45,9 +45,15 @@ pub async fn set_url(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<SetSocialUrlRequest>,
 ) -> Response {
+    let id = match payload.id.parse::<i64>() {
+        Ok(id) => id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
     let social_update_parameters = SetSocialParameters {
         url: payload.url,
-        id: payload.id,
+        id,
     };
 
     match app_state.database_connection().begin().await {

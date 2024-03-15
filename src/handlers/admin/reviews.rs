@@ -84,18 +84,22 @@ pub async fn remove_video_review(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<RemoveVideoReviewRequest>,
 ) -> Response {
-    match app_state.database_connection().begin().await {
-        Ok(transaction) => {
-            match ReviewsService::remove_video_review(payload.id, &transaction).await {
-                Ok(()) => {
-                    if let Err(cause) = transaction.commit().await {
-                        return AppError::InternalServerError(Box::new(cause)).into_response();
-                    }
-                    StatusCode::NO_CONTENT.into_response()
-                }
-                Err(cause) => Into::<AppError>::into(cause).into_response(),
-            }
+    let id = match payload.id.parse::<i64>() {
+        Ok(id) => id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
         }
+    };
+    match app_state.database_connection().begin().await {
+        Ok(transaction) => match ReviewsService::remove_video_review(id, &transaction).await {
+            Ok(()) => {
+                if let Err(cause) = transaction.commit().await {
+                    return AppError::InternalServerError(Box::new(cause)).into_response();
+                }
+                StatusCode::NO_CONTENT.into_response()
+            }
+            Err(cause) => Into::<AppError>::into(cause).into_response(),
+        },
         Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
     }
 }
@@ -110,12 +114,12 @@ pub struct AddVideoReviewRequest {
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize, Debug)]
 pub struct RemoveVideoReviewRequest {
-    pub id: i64,
+    pub id: String,
 }
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize)]
 pub struct VideoReview {
-    pub id: i64,
+    pub id: String,
     pub url: String,
     pub avatar: String,
     pub name: String,
@@ -128,7 +132,7 @@ pub struct VideoReview {
 impl From<VideoReviewModel> for VideoReview {
     fn from(value: VideoReviewModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             url: value.url,
             name: value.name,
             avatar: value.avatar,
@@ -162,8 +166,14 @@ pub async fn remove_review(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<RemoveVideoReviewRequest>,
 ) -> Response {
+    let id = match payload.id.parse::<i64>() {
+        Ok(id) => id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
     match app_state.database_connection().begin().await {
-        Ok(transaction) => match ReviewsService::remove_review(payload.id, &transaction).await {
+        Ok(transaction) => match ReviewsService::remove_review(id, &transaction).await {
             Ok(()) => {
                 if let Err(cause) = transaction.commit().await {
                     return AppError::InternalServerError(Box::new(cause)).into_response();
@@ -178,7 +188,7 @@ pub async fn remove_review(
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize, Debug)]
 pub struct UpdateVideoReviewRequest {
-    pub id: i64,
+    pub id: String,
     pub url: Option<String>,
     pub avatar: Option<String>,
     pub name: Option<String>,
@@ -206,10 +216,16 @@ pub async fn update_video_review(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<UpdateVideoReviewRequest>,
 ) -> Response {
+    let id = match payload.id.parse::<i64>() {
+        Ok(id) => id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
             let parameters = UpdateVideoReviewParameters {
-                id: payload.id,
+                id,
                 url: payload.url,
                 avatar: payload.avatar,
                 name: payload.name,

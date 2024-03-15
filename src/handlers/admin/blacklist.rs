@@ -34,18 +34,22 @@ pub async fn blacklist_user(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<BlacklistUserRequest>,
 ) -> Response {
-    match app_state.database_connection().begin().await {
-        Ok(transaction) => {
-            match BlacklistService::blacklist_user(payload.steam_id, &transaction).await {
-                Ok(()) => {
-                    if let Err(cause) = transaction.commit().await {
-                        return AppError::InternalServerError(Box::new(cause)).into_response();
-                    }
-                    StatusCode::NO_CONTENT.into_response()
-                }
-                Err(error) => Into::<AppError>::into(error).into_response(),
-            }
+    let steam_id = match payload.steam_id.parse::<i64>() {
+        Ok(id) => id,
+        Err(error) => {
+            return Into::<AppError>::into(error).into_response();
         }
+    };
+    match app_state.database_connection().begin().await {
+        Ok(transaction) => match BlacklistService::blacklist_user(steam_id, &transaction).await {
+            Ok(()) => {
+                if let Err(cause) = transaction.commit().await {
+                    return AppError::InternalServerError(Box::new(cause)).into_response();
+                }
+                StatusCode::NO_CONTENT.into_response()
+            }
+            Err(error) => Into::<AppError>::into(error).into_response(),
+        },
         Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
     }
 }
@@ -72,18 +76,23 @@ pub async fn unblacklist_user(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<UnblacklistUserRequest>,
 ) -> Response {
-    match app_state.database_connection().begin().await {
-        Ok(transaction) => {
-            match BlacklistService::unblacklist_user(payload.steam_id, &transaction).await {
-                Ok(()) => {
-                    if let Err(cause) = transaction.commit().await {
-                        return AppError::InternalServerError(Box::new(cause)).into_response();
-                    }
-                    StatusCode::NO_CONTENT.into_response()
-                }
-                Err(error) => Into::<AppError>::into(error).into_response(),
-            }
+    let steam_id = match payload.steam_id.parse::<i64>() {
+        Ok(id) => id,
+        Err(error) => {
+            return Into::<AppError>::into(error).into_response();
         }
+    };
+
+    match app_state.database_connection().begin().await {
+        Ok(transaction) => match BlacklistService::unblacklist_user(steam_id, &transaction).await {
+            Ok(()) => {
+                if let Err(cause) = transaction.commit().await {
+                    return AppError::InternalServerError(Box::new(cause)).into_response();
+                }
+                StatusCode::NO_CONTENT.into_response()
+            }
+            Err(error) => Into::<AppError>::into(error).into_response(),
+        },
         Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
     }
 }
@@ -113,10 +122,10 @@ pub async fn full_blacklist(
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema)]
 pub struct BlacklistUserRequest {
-    steam_id: i64,
+    steam_id: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema)]
 pub struct UnblacklistUserRequest {
-    steam_id: i64,
+    steam_id: String,
 }

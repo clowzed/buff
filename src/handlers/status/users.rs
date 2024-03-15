@@ -1,10 +1,10 @@
 use crate::{errors::AppError, extractors::user_jwt::AuthJWT, state::AppState};
 use axum::{
-    extract::{Query, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, patch},
-    Json,
+    Form, Json,
 };
 use redis::AsyncCommands;
 use std::sync::Arc;
@@ -17,7 +17,7 @@ pub struct StatusResponse {
 
 #[derive(Debug, serde::Serialize, ToSchema)]
 pub struct UserStatus {
-    steam_id: i64,
+    steam_id: String,
     is_online: bool,
 }
 
@@ -56,15 +56,13 @@ pub async fn refresh_status(
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema, IntoParams)]
 pub struct StatusRequest {
-    ids: Vec<i64>,
+    ids: Vec<String>,
 }
 
 #[utoipa::path(
     get,
     path = "/api/status/user",
-    params(
-        StatusRequest
-    ),
+    request_body =     StatusRequest ,
     responses(
         (status = 500, description = "Internal server error",              body = Details),
         (status = 400, description = "Bad request",                        body = Details),
@@ -74,7 +72,7 @@ pub struct StatusRequest {
 #[tracing::instrument(skip(app_state, payload))]
 pub async fn fetch_status(
     State(app_state): State<Arc<AppState>>,
-    Query(payload): Query<StatusRequest>,
+    Form(payload): Form<StatusRequest>,
 ) -> Response {
     let mut client = match app_state.redis_client().get_async_connection().await {
         Ok(connection) => connection,
@@ -83,16 +81,22 @@ pub async fn fetch_status(
         }
     };
 
+    let ids: Vec<_> = payload
+        .ids
+        .into_iter()
+        .flat_map(|id| id.parse::<i64>())
+        .collect();
+
     match client
-        .mget::<Vec<i64>, Vec<Option<bool>>>(payload.ids.to_owned()) // FIXME: We need optimization to avoid allocation
+        .mget::<Vec<i64>, Vec<Option<bool>>>(ids.to_owned())
         .await
     {
         Ok(statuses) => Json(StatusResponse {
             statuses: statuses
                 .into_iter()
-                .zip(payload.ids)
+                .zip(ids)
                 .map(|status| UserStatus {
-                    steam_id: status.1,
+                    steam_id: status.1.to_string(),
                     is_online: status.0.unwrap_or(false),
                 })
                 .collect::<Vec<_>>(),

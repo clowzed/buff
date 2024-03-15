@@ -31,7 +31,7 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug)]
 pub struct User {
-    pub steam_id: i64,
+    pub steam_id: String,
     pub trade_url: Option<String>,
     pub email: Option<String>,
     pub registered_at: NaiveDateTime,
@@ -40,7 +40,7 @@ pub struct User {
 impl From<UserModel> for User {
     fn from(value: UserModel) -> Self {
         Self {
-            steam_id: value.steam_id,
+            steam_id: value.steam_id.to_string(),
             trade_url: value.trade_url,
             email: value.email,
             registered_at: value.registered_at,
@@ -142,7 +142,7 @@ pub async fn set_trade_url(
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct TopUser {
-    pub steam_id: i64,
+    pub steam_id: String,
     #[schema(value_type = String)]
     pub amount: Decimal,
 }
@@ -150,7 +150,7 @@ pub struct TopUser {
 impl From<crate::services::users::TopUser> for TopUser {
     fn from(value: crate::services::users::TopUser) -> Self {
         Self {
-            steam_id: value.steam_id,
+            steam_id: value.steam_id.to_string(),
             amount: value.amount,
         }
     }
@@ -220,7 +220,7 @@ pub async fn chat(
     };
 
     let params = GetChatParameters {
-        moderator_id: moderator_id,
+        moderator_id,
         steam_id: user.steam_id,
     };
 
@@ -281,7 +281,7 @@ pub async fn send_message(
 
                     let send = SendMessageResponse {
                         message: Into::<Message>::into(res.0),
-                        images_ids: res.1,
+                        images_ids: res.1.iter().map(|id| id.to_string()).collect(),
                     };
 
                     match app_state.redis_client().get_async_connection().await {

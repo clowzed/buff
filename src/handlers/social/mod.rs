@@ -13,7 +13,7 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct Social {
-    id: i64,
+    id: String,
     name: String,
     url: Option<String>,
 }
@@ -21,7 +21,7 @@ pub struct Social {
 impl From<SocialModel> for Social {
     fn from(value: SocialModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             name: value.name,
             url: value.url,
         }

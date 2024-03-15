@@ -20,8 +20,8 @@ use crate::state::AppState;
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug, IntoParams)]
 pub struct Bounds {
-    limit: u64,
-    offset: u64,
+    limit: String,
+    offset: String,
 }
 
 #[utoipa::path(
@@ -41,9 +41,21 @@ pub async fn all_users_reviews(
     State(app_state): State<Arc<AppState>>,
     Query(bounds): Query<Bounds>,
 ) -> Response {
-    match ReviewsService::users_all(bounds.limit, bounds.offset, app_state.database_connection())
-        .await
-    {
+    let limit = match bounds.limit.parse::<u64>() {
+        Ok(limit) => limit,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
+
+    let offset = match bounds.offset.parse::<u64>() {
+        Ok(offset) => offset,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
+
+    match ReviewsService::users_all(limit, offset, app_state.database_connection()).await {
         Ok(reviews) => Json(
             reviews
                 .into_iter()
@@ -167,8 +179,8 @@ pub struct AddReviewRequest {
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize)]
 pub struct Review {
-    pub id: i64,
-    pub steam_id: i64,
+    pub id: String,
+    pub steam_id: String,
     pub review: String,
     pub stars: i16,
     pub created_at: DateTime,
@@ -180,8 +192,8 @@ pub struct Review {
 impl From<ReviewModel> for Review {
     fn from(value: ReviewModel) -> Self {
         Self {
-            id: value.id,
-            steam_id: value.steam_id,
+            id: value.id.to_string(),
+            steam_id: value.steam_id.to_string(),
             review: value.review,
             stars: value.stars,
             created_at: value.created_at,
@@ -191,7 +203,7 @@ impl From<ReviewModel> for Review {
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize)]
 pub struct VideoReview {
-    pub id: i64,
+    pub id: String,
     pub url: String,
     pub avatar: String,
     pub name: String,
@@ -204,7 +216,7 @@ pub struct VideoReview {
 impl From<VideoReviewModel> for VideoReview {
     fn from(value: VideoReviewModel) -> Self {
         Self {
-            id: value.id,
+            id: value.id.to_string(),
             url: value.url,
             avatar: value.avatar,
             name: value.name,
