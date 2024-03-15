@@ -6,7 +6,7 @@ use entity::{
     },
     user::Entity as UserEntity,
     video_review::{
-        ActiveModel as VideoReviewActiveModel, Column::Url as VideoReviewColumnUrl,
+        ActiveModel as VideoReviewActiveModel, Column as VideoReviewColumn,
         Entity as VideoReviewEntity, Model as VideoReviewModel,
     },
 };
@@ -160,7 +160,7 @@ impl Service {
         let review: AddVideoReviewParameters = parameters.into();
 
         match VideoReviewEntity::find()
-            .filter(VideoReviewColumnUrl.eq(&review.url))
+            .filter(VideoReviewColumn::Url.eq(&review.url))
             .one(connection)
             .await?
         {
@@ -270,19 +270,7 @@ impl Service {
                 )
                 .count(connection)
                 .await?,
-            VideoReviewEntity::find()
-                .filter(
-                    Condition::any().add(
-                        ReviewColumn::SteamId.not_in_subquery(
-                            Query::select()
-                                .column(entity::blacklisted::Column::SteamId)
-                                .from(entity::blacklisted::Entity)
-                                .to_owned(),
-                        ),
-                    ),
-                )
-                .count(connection)
-                .await?,
+            VideoReviewEntity::find().count(connection).await?,
         ))
     }
 
