@@ -44,7 +44,7 @@ pub enum Sender {
 
 pub struct UploadImagesData<'a> {
     pub folder: PathBuf,
-    pub images: &'a [FieldData<Bytes>],
+    pub image: Option<&'a FieldData<Bytes>>,
     pub message_id: i64,
 }
 
@@ -53,7 +53,7 @@ pub struct SendMessageParameters<'a> {
     pub chat_id: i64,
     pub sender: Sender,
     pub text: String,
-    pub images: &'a [FieldData<Bytes>],
+    pub image: Option<&'a FieldData<Bytes>>,
 }
 
 impl Service {
@@ -98,76 +98,40 @@ impl Service {
     where
         T: ConnectionTrait + TransactionTrait,
     {
-        let paths = {
-            let mut paths = Vec::new();
+        if parameters.image.is_none() {
+            return Ok(Vec::new());
+        }
 
-            for image in parameters.images.iter() {
-                let real_filepath = parameters.folder.join(format!(
-                    "{}-{}",
-                    uuid::Uuid::new_v4(),
-                    uuid::Uuid::new_v4()
-                ));
-                match fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .open(&real_filepath)
-                    .await
-                {
-                    Ok(mut file) => match file.write(&image.contents).await {
-                        Ok(_) => paths.push(real_filepath.clone()),
-                        Err(cause) => {
-                            for filepath in paths.iter() {
-                                fs::remove_file(&filepath).await.ok();
-                            }
-                            fs::remove_file(&real_filepath).await.ok();
-                            Err(cause)?
-                        }
-                    },
-                    Err(cause) => {
-                        for filepath in paths.iter() {
-                            fs::remove_file(filepath).await.ok();
-                        }
-                        Err(cause)?;
-                    }
-                }
-            }
+        let path = {
+            let real_filepath = parameters.folder.join(format!(
+                "{}-{}",
+                uuid::Uuid::new_v4(),
+                uuid::Uuid::new_v4()
+            ));
+            let mut file = fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(&real_filepath)
+                .await?;
+            file.write(&parameters.image.unwrap().contents).await?;
 
-            paths
-                .iter()
-                .map(|path| path.display().to_string())
-                .collect::<Vec<_>>()
+            real_filepath.display().to_string()
         };
 
-        let active_models = paths
-            .iter()
-            .map(|path| ImageActiveModel {
-                message_id: Set(parameters.message_id),
-                path: Set(path.clone()),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
+        let active_model = ImageActiveModel {
+            message_id: Set(parameters.message_id),
+            path: Set(path.clone()),
+            ..Default::default()
+        };
 
-        match ImageEntity::insert_many(active_models)
-            .exec(connection)
-            .await
-        {
-            // So currently seaorm does not have exec_with_returning for insert_many
-            // Thats why this is very ugly hack but I think I will introduce PR
-            // for issue https://github.com/SeaQL/sea-orm/issues/1862
-            Ok(_) => Ok(ImageEntity::find()
-                .filter(ImageColumn::MessageId.eq(parameters.message_id))
-                .all(connection)
-                .await?
-                .into_iter()
-                .map(|image| image.id)
-                .collect()),
-            Err(cause) => {
-                for filepath in paths {
-                    fs::remove_file(filepath).await.ok();
-                }
-                Err(cause)?
-            }
-        }
+        ImageEntity::insert(active_model).exec(connection).await?;
+        Ok(ImageEntity::find()
+            .filter(ImageColumn::MessageId.eq(parameters.message_id))
+            .all(connection)
+            .await?
+            .into_iter()
+            .map(|image| image.id)
+            .collect())
     }
 
     #[tracing::instrument(skip(connection, parameters))]
@@ -196,7 +160,7 @@ impl Service {
 
         let parameters = UploadImagesData {
             folder: params.folder,
-            images: params.images,
+            image: params.image,
             message_id: message.id,
         };
 

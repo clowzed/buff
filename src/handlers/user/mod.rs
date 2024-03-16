@@ -252,7 +252,7 @@ pub async fn send_message(
     State(app_state): State<Arc<AppState>>,
     AuthJWT(user): AuthJWT,
     Path(chat_id): Path<i64>,
-    TypedMultipart(UploadData { images, text }): TypedMultipart<UploadData>,
+    TypedMultipart(UploadData { image, text }): TypedMultipart<UploadData>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(connection) => {
@@ -270,7 +270,7 @@ pub async fn send_message(
                 chat_id,
                 sender: Sender::User,
                 text,
-                images: &images,
+                image: image.as_ref(),
             };
 
             match ChatService::send_message(params, &connection).await {

@@ -43,8 +43,8 @@ pub struct ModeratorCredentials {
 
 #[derive(TryFromMultipart, ToSchema)]
 pub struct UploadData {
-    #[schema(value_type = Vec<String>, format = Binary)]
-    pub images: Vec<FieldData<Bytes>>,
+    #[schema(value_type = Option<String>, format = Binary)]
+    pub image: Option<FieldData<Bytes>>,
     pub text: String,
 }
 
@@ -535,7 +535,7 @@ pub async fn send_message(
     State(app_state): State<Arc<AppState>>,
     ModeratorAuthJWT(moderator): ModeratorAuthJWT,
     Path(chat_id): Path<i64>,
-    TypedMultipart(UploadData { images, text }): TypedMultipart<UploadData>,
+    TypedMultipart(UploadData { image, text }): TypedMultipart<UploadData>,
 ) -> Response {
     match app_state.database_connection().begin().await {
         Ok(connection) => {
@@ -553,7 +553,7 @@ pub async fn send_message(
                 chat_id,
                 sender: Sender::Moderator,
                 text,
-                images: &images,
+                image: image.as_ref(),
             };
 
             match ChatService::send_message(params, &connection).await {
