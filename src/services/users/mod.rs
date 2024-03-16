@@ -156,4 +156,25 @@ impl Service {
             .count(connection)
             .await?)
     }
+
+    pub async fn avatar<T>(steam_id: i64, connection: &T) -> Result<Option<String>, ServiceError>
+    where
+        T: TransactionTrait + ConnectionTrait,
+    {
+        tracing::info!("!!!");
+        match UserEntity::find_by_id(steam_id).one(connection).await? {
+            Some(user) => Ok(user.avatar_url),
+            None => Err(ServiceError::UserWasNotFound(steam_id)),
+        }
+    }
+
+    pub async fn username<T>(steam_id: i64, connection: &T) -> Result<Option<String>, ServiceError>
+    where
+        T: TransactionTrait + ConnectionTrait,
+    {
+        match UserEntity::find_by_id(steam_id).one(connection).await? {
+            Some(user) => Ok(user.username),
+            None => Err(ServiceError::UserWasNotFound(steam_id)),
+        }
+    }
 }

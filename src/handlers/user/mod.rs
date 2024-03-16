@@ -35,6 +35,8 @@ pub struct User {
     pub trade_url: Option<String>,
     pub email: Option<String>,
     pub registered_at: NaiveDateTime,
+    pub username: Option<String>,
+    pub avatar_url: Option<String>,
 }
 
 impl From<UserModel> for User {
@@ -44,6 +46,8 @@ impl From<UserModel> for User {
             trade_url: value.trade_url,
             email: value.email,
             registered_at: value.registered_at,
+            username: value.username,
+            avatar_url: value.avatar_url,
         }
     }
 }
@@ -475,11 +479,57 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>, chat_id: i64) {
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/user/avatar/{id}",
+    params(("id" = i64, Path, description = "SteamId")),
+
+    responses(
+        (status = 200, description = "Avatar was successfully retrieved", body = String),
+        (status = 500, description = "Internal server error",              body = Details),
+        (status = 404, description = "User was not found"),
+
+    ),
+)]
+pub async fn avatar(State(app_state): State<Arc<AppState>>, Path(steam_id): Path<i64>) -> Response {
+    match UsersService::avatar(steam_id, app_state.database_connection()).await {
+        Ok(Some(url)) => url.into_response(),
+        Ok(None) => "https://community.cloudflare.steamstatic.com/public/shared/images/responsive/share_steam_logo.png".into_response(),
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/user/username/{id}",
+    params(("id" = i64, Path, description = "SteamId")),
+
+    responses(
+        (status = 200, description = "Username was successfully retrieved", body = String),
+        (status = 500, description = "Internal server error",              body = Details),
+        (status = 404, description = "User was not found"),
+
+    ),
+)]
+pub async fn username(
+    State(app_state): State<Arc<AppState>>,
+    Path(steam_id): Path<i64>,
+) -> Response {
+    tracing::error!("Called");
+    match UsersService::username(steam_id, app_state.database_connection()).await {
+        Ok(Some(name)) => name.into_response(),
+        Ok(None) => "Unknown".into_response(),
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(get_user))
         .route("/trade-url", patch(set_trade_url))
         .route("/email", patch(set_email))
+        .route("/avatar/:id", get(avatar))
+        .route("/username/:id", get(username))
         .route("/top", get(get_top))
         .route("/chat", patch(chat))
         .route("/chat/:id/message", post(send_message))

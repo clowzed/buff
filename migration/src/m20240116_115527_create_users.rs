@@ -19,6 +19,8 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(User::Email).string())
                     .col(ColumnDef::new(User::TradeUrl).string())
+                    .col(ColumnDef::new(User::AvatarUrl).string())
+                    .col(ColumnDef::new(User::Username).string())
                     .col(
                         ColumnDef::new(User::RegisteredAt)
                             .date_time()
@@ -44,4 +46,6 @@ pub enum User {
     Email,
     TradeUrl,
     RegisteredAt,
+    AvatarUrl,
+    Username,
 }

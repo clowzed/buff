@@ -13,7 +13,8 @@ use axum::{
     routing::get,
     Json,
 };
-use sea_orm::TransactionTrait;
+use sea_orm::ActiveModelTrait;
+use sea_orm::{IntoActiveModel, Set, TransactionTrait};
 use std::sync::Arc;
 use utoipa::ToSchema;
 
@@ -74,6 +75,84 @@ pub async fn login(
         Ok(transaction) => {
             let user = match UserService::safe_registration(steam_id, &transaction).await {
                 Ok(user) => {
+                    // FIXME Everything here is trash
+
+                    let fetched_text = match reqwest::get(format!(
+                        "https://steamcommunity.com/profiles/{steam_id}"
+                    ))
+                    .await
+                    {
+                        Ok(response) => Some(response.text().await.unwrap_or_default()),
+                        Err(_) => None,
+                    };
+
+                    let avatar_url_regex =
+                        once_cell_regex::regex!(r#"<link\s+rel="image_src"\s+href="([^"]+)"\s*>"#);
+                    let username_regex = once_cell_regex::regex!(r#""personaname":"([^"]+)""#);
+
+                    let avatar_url = fetched_text.as_ref().and_then(|html| {
+                        avatar_url_regex.captures(&html).and_then(|captures| {
+                            captures
+                                .get(1)
+                                .map(|personaname| personaname.as_str().replace(r"\", ""))
+                        })
+                    });
+
+                    let username = fetched_text.as_ref().and_then(|html| {
+                        username_regex.captures(&html).and_then(|captures| {
+                            captures
+                                .get(1)
+                                .map(|personaname| personaname.as_str().replace(r"\", ""))
+                        })
+                    });
+
+                    let cloned_user = user.clone();
+                    let cloned_user_again = user.clone();
+
+                    if let Some(url) = avatar_url {
+                        match user.avatar_url {
+                            Some(ref user_avatar_url) if url.ne(user_avatar_url) => {
+                                let mut active = cloned_user.into_active_model();
+                                active.avatar_url = Set(Some(url.clone()));
+                                if let Err(cause) = active.update(&transaction).await {
+                                    return AppError::InternalServerError(Box::new(cause))
+                                        .into_response();
+                                }
+                            }
+                            None => {
+                                let mut active = cloned_user.into_active_model();
+                                active.avatar_url = Set(Some(url.clone()));
+                                if let Err(cause) = active.update(&transaction).await {
+                                    return AppError::InternalServerError(Box::new(cause))
+                                        .into_response();
+                                }
+                            }
+                            _ => {}
+                        }
+                    };
+
+                    if let Some(name) = username {
+                        match user.username {
+                            Some(ref used_username) if used_username.ne(&name) => {
+                                let mut active = cloned_user_again.into_active_model();
+                                active.username = Set(Some(name.clone()));
+                                if let Err(cause) = active.update(&transaction).await {
+                                    return AppError::InternalServerError(Box::new(cause))
+                                        .into_response();
+                                }
+                            }
+                            None => {
+                                let mut active = cloned_user_again.into_active_model();
+                                active.username = Set(Some(name.clone()));
+                                if let Err(cause) = active.update(&transaction).await {
+                                    return AppError::InternalServerError(Box::new(cause))
+                                        .into_response();
+                                }
+                            }
+                            _ => {}
+                        }
+                    };
+
                     if let Err(cause) = transaction.commit().await {
                         return AppError::InternalServerError(Box::new(cause)).into_response();
                     }

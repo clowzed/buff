@@ -10,6 +10,8 @@ pub struct Model {
     pub steam_id: i64,
     pub email: Option<String>,
     pub trade_url: Option<String>,
+    pub avatar_url: Option<String>,
+    pub username: Option<String>,
     pub registered_at: DateTime,
 }
 

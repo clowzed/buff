@@ -162,6 +162,8 @@ async fn main() {
             handlers::admin::moderators::image,
             handlers::user::image,
             handlers::user::chat,
+            handlers::user::avatar,
+            handlers::user::username,
             handlers::user::send_message,
             handlers::admin::users::registrations_in_period
         ),

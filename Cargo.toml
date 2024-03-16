@@ -45,6 +45,7 @@ rand_core = "0.6.4"
 axum_typed_multipart = "0.11.0"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 tokio-util = "0.7.10"
+once-cell-regex = "0.2.1"
 
 
 [workspace]
