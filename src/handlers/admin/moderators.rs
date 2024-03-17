@@ -5,14 +5,14 @@ use crate::{
             AssignModeratorParameters, CreateModeratorParameters, Service as AdminService,
             UnassignModeratorParameters,
         },
-        auth::{ResetPasswordParameters, Service as AuthService},
+        auth::{JwtCheckParams, ResetPasswordParameters, Service as AuthService},
         chat::{GetChatParameters, SendMessageParameters, Sender, Service as ChatService},
     },
     Order,
 };
 use axum::{
     body::{Body, Bytes},
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -20,7 +20,7 @@ use axum::{
 use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 use chrono::NaiveDateTime as DateTime;
 use entity::{
-    admin::Model as AdminModel,
+    admin::{Entity as AdminEntity, Model as AdminModel},
     chat::{Entity as ChatEntity, Model as ChatModel},
     image::{Entity as ImageEntity, Model as ImageModel},
     message::{Entity as MessageEntity, Model as MessageModel},
@@ -645,12 +645,41 @@ use axum::extract::{
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use tokio::sync::mpsc;
 
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct AuthQuery {
+    pub authorization: String,
+}
+
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
-    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
     Path(chat_id): Path<i64>,
+    Query(AuthQuery { authorization }): Query<AuthQuery>,
 ) -> Response {
+    let token = match authorization.split_once(' ') {
+        Some(("Bearer", contents)) => contents.to_string(),
+        _ => return AppError::AuthorizationHeaderBadSchema.into_response(),
+    };
+
+    let params = JwtCheckParams {
+        token,
+        secret: state.configuration().jwt_secret(),
+    };
+
+    let claims = match AuthService::check(params) {
+        Ok(claims) => claims,
+        Err(cause) => return Into::<AppError>::into(cause).into_response(),
+    };
+
+    let moderator = match AdminEntity::find_by_id(claims.sub)
+        .one(state.database_connection())
+        .await
+    {
+        Ok(Some(admin)) => admin,
+        Ok(None) => return AppError::Unauthorized.into_response(),
+        Err(cause) => return AppError::InternalServerError(Box::new(cause)).into_response(),
+    };
+
     match ChatEntity::find_by_id(chat_id)
         .one(state.database_connection())
         .await
