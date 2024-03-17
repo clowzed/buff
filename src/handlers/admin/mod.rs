@@ -32,7 +32,7 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/review", delete(reviews::remove_review))
         .route("/order/:id/cancel", patch(orders::cancel_order_by_id))
         .route("/order/:id/success", patch(orders::finish_order_by_id))
-        .route("/order/all-in-period", get(orders::all_in_period))
+        .route("/order/all-in-period", post(orders::all_in_period))
         .route("/currency", post(currency::create_currency))
         .route(
             "/currency/:id",

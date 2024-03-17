@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -109,11 +109,11 @@ pub struct TimeBounds {
 }
 
 #[utoipa::path(
-    get,
+    post,
     path = "/api/admin/order/all-in-period",
-    params(
+    request_body =
        TimeBounds
-    ),
+    ,
     responses(
         (status = 200, description = "Orders were successfully retrieved", body = [Order]),
         (status = 401, description = "Unauthorized",                              body = Details),
@@ -127,7 +127,7 @@ pub struct TimeBounds {
 pub async fn all_in_period(
     ModeratorAuthJWT(admin): ModeratorAuthJWT,
     State(app_state): State<Arc<AppState>>,
-    Query(bounds): Query<TimeBounds>,
+    Json(bounds): Json<TimeBounds>,
 ) -> axum::response::Response {
     let period = if bounds.start_datetime <= bounds.end_datetime {
         (bounds.start_datetime, bounds.end_datetime)
