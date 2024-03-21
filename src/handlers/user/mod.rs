@@ -485,11 +485,11 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>, chat_id: i64) {
     let (mut sender, _) = socket.split();
 
     tokio::spawn(async move {
-        let mut connection = state.redis_client().get_connection().unwrap();
-        let mut pubsub = connection.as_pubsub();
-        pubsub.subscribe(format!("chat-{}", chat_id)).unwrap();
+        let connection = state.redis_client().get_async_connection().await.unwrap();
+        let mut pubsub = connection.into_pubsub();
+        pubsub.subscribe(format!("chat-{}", chat_id)).await.unwrap();
 
-        while let Ok(msg) = pubsub.get_message() {
+        while let Some(msg) = pubsub.on_message().next().await {
             if let Ok(payload) = msg.get_payload() {
                 if tx.send(payload).await.is_err() {
                     break;
