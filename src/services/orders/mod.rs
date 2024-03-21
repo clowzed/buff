@@ -2,16 +2,18 @@ use crate::errors::AppError;
 
 use chrono::Utc;
 use entity::{
+    admin::{Column as AdminColumn, Entity as AdminEntity, Relation as AdminRelation},
     order::{
         ActiveModel as OrderActiveModel, Column as OrderColumn, Entity as OrderEntity,
         Model as OrderModel,
     },
-    sea_orm_active_enums::Status,
+    sea_orm_active_enums::{Role, Status},
 };
-
+use migration::Alias;
+use sea_orm::RelationTrait;
 use sea_orm::{
     prelude::Decimal, ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
-    QueryOrder, Set, TransactionTrait, TryIntoModel,
+    QueryOrder, QuerySelect, Set, TransactionTrait, TryIntoModel,
 };
 
 use std::fmt::Debug;
@@ -80,6 +82,20 @@ impl Service {
     {
         let params: CreateOrderParameters = parameters.into();
 
+        let moderator = AdminEntity::find()
+            .filter(AdminColumn::Role.eq(Role::Moderator))
+            .join_as(
+                sea_orm::JoinType::LeftJoin,
+                AdminRelation::Order.def(),
+                Alias::new("a"),
+            )
+            .group_by(AdminColumn::Id)
+            .order_by_asc(AdminColumn::Id.count())
+            .limit(1)
+            .one(connection)
+            .await?
+            .map(|moderator| moderator.id);
+
         let order_to_be_inserted = OrderActiveModel {
             steam_id: Set(params.steam_id),
             payment_method: Set(params.payment_method),
@@ -87,6 +103,7 @@ impl Service {
             amount: Set(params.amount),
             currency_symbol: Set(params.symbol),
             fixed_currency_rate: Set(params.currency_rate),
+            moderator_id: Set(moderator),
             ..Default::default()
         };
 
