@@ -9,13 +9,13 @@ use entity::{
     },
     sea_orm_active_enums::{Role, Status},
 };
-use migration::Alias;
+use migration::Expr;
+use migration::{Alias, IntoCondition};
 use sea_orm::RelationTrait;
 use sea_orm::{
     prelude::Decimal, ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
     QueryOrder, QuerySelect, Set, TransactionTrait, TryIntoModel,
 };
-
 use std::fmt::Debug;
 
 pub struct Service;
@@ -86,7 +86,11 @@ impl Service {
             .filter(AdminColumn::Role.eq(Role::Moderator))
             .join_as(
                 sea_orm::JoinType::LeftJoin,
-                AdminRelation::Order.def(),
+                AdminRelation::Order.def().on_condition(|_left, right| {
+                    Expr::col((right, OrderColumn::Status))
+                        .eq(Status::Created)
+                        .into_condition()
+                }),
                 Alias::new("a"),
             )
             .group_by(AdminColumn::Id)
