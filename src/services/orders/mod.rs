@@ -9,8 +9,7 @@ use entity::{
     },
     sea_orm_active_enums::{Role, Status},
 };
-use migration::Expr;
-use migration::{Alias, IntoCondition};
+use migration::Alias;
 use sea_orm::RelationTrait;
 use sea_orm::{
     prelude::Decimal, ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
