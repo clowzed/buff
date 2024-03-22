@@ -86,11 +86,7 @@ impl Service {
             .filter(AdminColumn::Role.eq(Role::Moderator))
             .join_as(
                 sea_orm::JoinType::LeftJoin,
-                AdminRelation::Order.def().on_condition(|_left, right| {
-                    Expr::col((right, OrderColumn::Status))
-                        .eq(Status::Created)
-                        .into_condition()
-                }),
+                AdminRelation::Order.def(),
                 Alias::new("a"),
             )
             .group_by(AdminColumn::Id)
