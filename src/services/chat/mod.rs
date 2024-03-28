@@ -116,7 +116,7 @@ impl Service {
                 .create(true)
                 .open(&real_filepath)
                 .await?;
-            file.write(&parameters.image.unwrap().contents).await?;
+            let _ = file.write(&parameters.image.unwrap().contents).await?;
 
             real_filepath.display().to_string()
         };

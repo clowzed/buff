@@ -4,8 +4,8 @@ use entity::user::{
 
 use migration::{Alias, Query, SimpleExpr};
 use sea_orm::{
-    prelude::*, Condition, FromQueryResult, JoinType, Order, QueryOrder, QuerySelect, QueryTrait,
-    Set, TransactionTrait,
+    prelude::*, Condition, FromQueryResult, JoinType, Order, QueryOrder, QuerySelect, Set,
+    TransactionTrait,
 };
 
 use crate::errors::AppError;

@@ -91,18 +91,18 @@ pub async fn login(
                     let username_regex = once_cell_regex::regex!(r#""personaname":"([^"]+)""#);
 
                     let avatar_url = fetched_text.as_ref().and_then(|html| {
-                        avatar_url_regex.captures(&html).and_then(|captures| {
+                        avatar_url_regex.captures(html).and_then(|captures| {
                             captures
                                 .get(1)
-                                .map(|personaname| personaname.as_str().replace(r"\", ""))
+                                .map(|personaname| personaname.as_str().replace('\\', ""))
                         })
                     });
 
                     let username = fetched_text.as_ref().and_then(|html| {
-                        username_regex.captures(&html).and_then(|captures| {
+                        username_regex.captures(html).and_then(|captures| {
                             captures
                                 .get(1)
-                                .map(|personaname| personaname.as_str().replace(r"\", ""))
+                                .map(|personaname| personaname.as_str().replace('\\', ""))
                         })
                     });
 
