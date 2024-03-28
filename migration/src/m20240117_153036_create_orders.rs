@@ -60,7 +60,8 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("FK_order_admin")
                             .from(Order::Table, Order::ModeratorId)
-                            .to(Admin::Table, Admin::Id),
+                            .to(Admin::Table, Admin::Id)
+                            .on_delete(ForeignKeyAction::SetNull),
                     )
                     .col(ColumnDef::new(Order::Amount).decimal().not_null())
                     .col(

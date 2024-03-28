@@ -35,6 +35,7 @@ pub enum ServiceError {
 pub struct GetChatParameters {
     pub moderator_id: i64,
     pub steam_id: i64,
+    pub order_id: i64,
 }
 
 pub enum Sender {
@@ -70,7 +71,8 @@ impl Service {
             .filter(
                 ChatColumn::ModeratorId
                     .eq(params.moderator_id)
-                    .and(ChatColumn::SteamId.eq(params.steam_id)),
+                    .and(ChatColumn::SteamId.eq(params.steam_id))
+                    .and(ChatColumn::OrderId.eq(params.order_id)),
             )
             .one(connection)
             .await?
@@ -80,6 +82,7 @@ impl Service {
                 let new_chat = ChatActiveModel {
                     steam_id: Set(params.steam_id),
                     moderator_id: Set(params.moderator_id),
+                    order_id: Set(params.order_id),
                     ..Default::default()
                 };
 

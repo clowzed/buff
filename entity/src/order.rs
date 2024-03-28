@@ -33,6 +33,8 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Admin,
+    #[sea_orm(has_many = "super::chat::Entity")]
+    Chat,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::SteamId",
@@ -46,6 +48,12 @@ pub enum Relation {
 impl Related<super::admin::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Admin.def()
+    }
+}
+
+impl Related<super::chat::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Chat.def()
     }
 }
 

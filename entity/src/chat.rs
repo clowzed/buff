@@ -10,6 +10,7 @@ pub struct Model {
     pub id: i64,
     pub moderator_id: i64,
     pub steam_id: i64,
+    pub order_id: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -24,6 +25,14 @@ pub enum Relation {
     Admin,
     #[sea_orm(has_many = "super::message::Entity")]
     Message,
+    #[sea_orm(
+        belongs_to = "super::order::Entity",
+        from = "Column::OrderId",
+        to = "super::order::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Order,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::SteamId",
@@ -43,6 +52,12 @@ impl Related<super::admin::Entity> for Entity {
 impl Related<super::message::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Message.def()
+    }
+}
+
+impl Related<super::order::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Order.def()
     }
 }
 

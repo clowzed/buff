@@ -225,10 +225,15 @@ pub async fn chat(
         Ok(id) => id,
         Err(cause) => return Into::<AppError>::into(cause).into_response(),
     };
+    let order_id: i64 = match payload.order_id.parse() {
+        Ok(id) => id,
+        Err(cause) => return Into::<AppError>::into(cause).into_response(),
+    };
 
     let params = GetChatParameters {
         moderator_id,
         steam_id: user.steam_id,
+        order_id,
     };
 
     match ChatService::chat(params, app_state.database_connection()).await {

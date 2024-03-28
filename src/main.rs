@@ -1,21 +1,4 @@
-use crate::handlers::{
-    admin::{
-        blacklist::*, currency::*, moderators::*, orders::TimeBounds,
-        requisites::SetRequisitesDataRequest, reviews::*, social::SetSocialUrlRequest,
-    },
-    auth::{
-        admins::*,
-        users::{JwtResponse, LoginLinkResponse},
-    },
-    orders::*,
-    requisites::Requisites,
-    reviews::users::{
-        AddReviewRequest, Bounds as ReviewsBounds, Review, ReviewCountResponse, VideoReview,
-    },
-    social::Social,
-    status::users::{StatusRequest, StatusResponse, UserStatus},
-    user::{Bounds, EmailForm, TopUser, TradeUrlForm, User},
-};
+use crate::handlers::{admin::moderators::*, orders::*};
 use config::{Configuration, ConfigurationReader, EnvConfigurationReader};
 use entity::{
     admin::{ActiveModel as AdminActiveModel, Column as AdminColumn, Entity as AdminEntity},
@@ -26,11 +9,9 @@ use entity::{
     sea_orm_active_enums::Role,
     social::{ActiveModel as SocialActiveModel, Column as SocialColumn, Entity as SocialEntity},
 };
-use errors::Details;
-use handlers::admin::users::RegistrationsInPeriodResponse;
-use handlers::admin::users::TimeBounds as RegisteredUsersTimeBounds;
+use utoipauto::utoipauto;
+
 use migration::{Migrator, MigratorTrait};
-use openid::VerifyForm;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectOptions, Database, EntityTrait, QueryFilter, Set,
 };
@@ -107,89 +88,9 @@ async fn main() {
     let state = AppState::new(database_connection, configuration, redis_client, openid);
 
     //* Setting utoipa for openapi
+    #[utoipauto]
     #[derive(OpenApi)]
     #[openapi(
-        paths(
-            handlers::user::get_top,
-            handlers::user::get_user,
-            handlers::user::set_email,
-            handlers::orders::get_order,
-            handlers::auth::users::login,
-            handlers::auth::admins::login,
-            handlers::orders::list_orders,
-            handlers::user::set_trade_url,
-            handlers::orders::cancel_order,
-            handlers::orders::create_order,
-            handlers::auth::users::login_link,
-            handlers::status::users::fetch_status,
-            handlers::admin::orders::all_in_period,
-            handlers::status::users::refresh_status,
-            handlers::admin::blacklist::blacklist_user,
-            handlers::admin::blacklist::full_blacklist,
-            handlers::admin::reviews::add_video_review,
-            handlers::reviews::users::add_users_review,
-            handlers::admin::orders::cancel_order_by_id,
-            handlers::admin::orders::finish_order_by_id,
-            handlers::reviews::users::all_users_reviews,
-            handlers::reviews::users::all_video_reviews,
-            handlers::reviews::users::count_reviews,
-            handlers::reviews::users::five_stars,
-            handlers::admin::blacklist::unblacklist_user,
-            handlers::admin::moderators::list_moderators,
-            handlers::admin::moderators::assign_moderator,
-            handlers::admin::moderators::create_moderator,
-            handlers::admin::moderators::delete_moderator,
-            handlers::admin::reviews::remove_video_review,
-            handlers::admin::reviews::remove_video_review,
-            handlers::admin::moderators::unassign_moderator,
-            handlers::admin::moderators::list_moderators_orders,
-            handlers::admin::moderators::list_unassigned_orders,
-            handlers::admin::currency::create_currency,
-            handlers::admin::currency::set_currency_rate_by_id,
-            handlers::admin::currency::delete_currency_rate_by_id,
-            handlers::currency::get_currency_rate_by_id,
-            handlers::currency::get_currency_rates,
-            handlers::orders::set_requisites,
-            handlers::admin::moderators::self_info,
-            handlers::admin::social::set_url,
-            handlers::social::socials,
-            handlers::requisites::requisites,
-            handlers::admin::requisites::set_data,
-            handlers::admin::reviews::update_video_review,
-            handlers::admin::moderators::change_password,
-            handlers::admin::moderators::chat,
-            handlers::admin::moderators::send_message,
-            handlers::admin::moderators::image,
-            handlers::user::image,
-            handlers::user::chat,
-            handlers::user::avatar,
-            handlers::user::username,
-            handlers::user::send_message,
-            handlers::admin::users::registrations_in_period
-        ),
-        components(
-            schemas(
-                    TimeBounds, UserStatus,
-                    VerifyForm, Credentials,
-                    JwtResponse, VideoReview,
-                    UnassignModeratorRequest,
-                    User, Order, Bounds, Review,
-                    Details, TopUser, EmailForm,
-                    TradeUrlForm, StatusRequest,
-                    StatusResponse, AddReviewRequest,
-                    LoginLinkResponse, ModeratorResponse,
-                    AdminLoginResponse, CreateOrderRequest,
-                    BlacklistUserRequest, ModeratorCredentials,
-                    AddVideoReviewRequest, AssignModeratorRequest,
-                    UnblacklistUserRequest, RemoveVideoReviewRequest,
-                    Currency, CreateCurrencyRequest,
-                    SetRateRequest, SetRequisitesRequest, ModeratorOrAdminInfo,
-                    SetSocialUrlRequest, Social, SetRequisitesDataRequest, Requisites,
-                    UpdateVideoReviewRequest, ChangePasswordRequest, GetChatRequest, ChatResponse,
-                    SendMessageResponse, ChatHistory, ReviewsBounds, ReviewCountResponse,
-                    RegistrationsInPeriodResponse, RegisteredUsersTimeBounds
-            )
-        ),
         modifiers(&SecurityAddon),
     )]
     struct ApiDoc;

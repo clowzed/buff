@@ -66,6 +66,7 @@ pub async fn login(
                     let parameters = GenerateAdminJwtParameters {
                         admin_id: admin_or_moderator.id,
                         secret: app_state.configuration().jwt_secret(),
+                        ttl: app_state.configuration().jwt_ttl(),
                     };
 
                     match AuthService::admin_jwt(parameters) {

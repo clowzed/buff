@@ -236,11 +236,7 @@ impl Service {
         T: ConnectionTrait + TransactionTrait,
     {
         Ok(OrderEntity::find()
-            .filter(
-                OrderColumn::Status
-                    .eq(Status::Succeeded)
-                    .and(OrderColumn::FinishedAt.between(period.0, period.1)),
-            )
+            .filter(OrderColumn::FinishedAt.between(period.0, period.1))
             .order_by_desc(OrderColumn::FinishedAt)
             .all(connection)
             .await?)

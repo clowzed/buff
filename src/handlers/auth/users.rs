@@ -164,6 +164,7 @@ pub async fn login(
             let parameters = GenerateUserJwtParameters {
                 steam_id: user.steam_id,
                 secret: app_state.configuration().jwt_secret(),
+                ttl: app_state.configuration().jwt_ttl(),
             };
 
             return match AuthService::user_jwt(parameters).map_err(Into::<AppError>::into) {

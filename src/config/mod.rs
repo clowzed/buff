@@ -13,6 +13,7 @@ pub struct Configuration {
     status_expiration_seconds: u64,
     realm: String,
     upload_folder: PathBuf,
+    jwt_ttl: i64,
 }
 
 impl Configuration {
@@ -46,6 +47,10 @@ impl Configuration {
 
     pub fn upload_folder(&self) -> &PathBuf {
         &self.upload_folder
+    }
+    
+    pub fn jwt_ttl(&self) -> i64 {
+        self.jwt_ttl
     }
 }
 

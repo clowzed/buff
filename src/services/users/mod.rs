@@ -4,8 +4,8 @@ use entity::user::{
 
 use migration::{Alias, Query, SimpleExpr};
 use sea_orm::{
-    prelude::*, Condition, FromQueryResult, JoinType, Order, QueryOrder, QuerySelect, Set,
-    TransactionTrait,
+    prelude::*, Condition, FromQueryResult, JoinType, Order, QueryOrder, QuerySelect, QueryTrait,
+    Set, TransactionTrait,
 };
 
 use crate::errors::AppError;
@@ -134,8 +134,9 @@ impl Service {
             .join_as(
                 JoinType::LeftJoin,
                 entity::user::Relation::Order.def(),
-                Alias::new("order_alias"),
+                Alias::new("order"),
             )
+            .group_by(UserColumn::SteamId)
             .order_by(SimpleExpr::Custom("amount".to_owned()), Order::Desc)
             .offset(Some(offset))
             .limit(Some(limit))

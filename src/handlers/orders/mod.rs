@@ -18,11 +18,11 @@ use axum::{
     Json,
 };
 use chrono::NaiveDateTime as DateTime;
+use chrono::NaiveDateTime;
 use entity::order::Model as OrderModel;
-
 use sea_orm::{prelude::Decimal, TransactionTrait};
 use std::sync::Arc;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 pub mod live;
 
@@ -47,6 +47,7 @@ pub struct Order {
     #[schema(value_type = String)]
     pub fixed_currency_rate: Decimal,
     pub currency_symbol: String,
+    pub requisites: Option<String>,
     pub finished_at: Option<DateTime>,
 }
 
@@ -63,6 +64,7 @@ impl From<OrderModel> for Order {
             fixed_currency_rate: value.fixed_currency_rate,
             currency_symbol: value.currency_symbol,
             finished_at: value.finished_at,
+            requisites: value.requisites,
         }
     }
 }
@@ -260,7 +262,7 @@ pub struct SetRequisitesRequest {
 }
 #[utoipa::path(
     patch,
-    path = "/api/user/order/{id}",
+    path = "/api/user/order/{id}/requisites",
     request_body = SetRequisitesRequest,
     responses(
         (status = 204, description = "Requisites were successfully set"),
@@ -302,6 +304,52 @@ pub async fn set_requisites(
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema, IntoParams)]
+pub struct TimeBounds {
+    start_datetime: NaiveDateTime,
+    end_datetime: NaiveDateTime,
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/user/order/all-in-period",
+    request_body =
+       TimeBounds
+    ,
+    responses(
+        (status = 200, description = "Orders were successfully retrieved", body = [Order]),
+        (status = 401, description = "Unauthorized",                              body = Details),
+        (status = 500, description = "Internal Server Error",                     body = Details),
+    ),
+    security(
+        ("jwt_user" = [])
+    )
+)]
+#[tracing::instrument(skip(app_state))]
+pub async fn all_in_period(
+    AuthJWT(user): AuthJWT,
+    State(app_state): State<Arc<AppState>>,
+    Json(bounds): Json<TimeBounds>,
+) -> axum::response::Response {
+    let period = if bounds.start_datetime <= bounds.end_datetime {
+        (bounds.start_datetime, bounds.end_datetime)
+    } else {
+        (bounds.end_datetime, bounds.start_datetime)
+    };
+
+    match OrderService::all_in_period(period, app_state.database_connection()).await {
+        Ok(orders) => Json(
+            orders
+                .into_iter()
+                .filter(|order| order.steam_id == user.steam_id)
+                .map(Into::<Order>::into)
+                .collect::<Vec<_>>(),
+        )
+        .into_response(),
+        Err(cause) => Into::<AppError>::into(cause).into_response(),
+    }
+}
+
 pub fn router() -> axum::Router<Arc<AppState>> {
     axum::Router::new()
         .route("/", post(create_order))
@@ -309,5 +357,6 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/", get(list_orders))
         .route("/:id", get(get_order))
         .route("/live", get(live::websocket_handler))
-        .route("/:id", patch(set_requisites))
+        .route("/:id/requisites", patch(set_requisites))
+        .route("/all-in-period", post(all_in_period))
 }

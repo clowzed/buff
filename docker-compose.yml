@@ -58,6 +58,7 @@ services:
        - SQLX_LOGGING=true
        - JWT_SECRET=secret
        - UPLOAD_FOLDER=./uploads
+       - JWT_TTL=60
     volumes:
       - images:/app/images
 
