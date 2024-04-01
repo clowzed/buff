@@ -44,6 +44,7 @@ pub struct ModeratorCredentials {
 #[derive(TryFromMultipart, ToSchema)]
 pub struct UploadData {
     #[schema(value_type = Option<String>, format = Binary)]
+    #[form_data(limit = "unlimited")]
     pub image: Option<FieldData<Bytes>>,
     pub text: String,
 }

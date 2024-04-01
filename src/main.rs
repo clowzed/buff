@@ -1,4 +1,5 @@
 use crate::handlers::{admin::moderators::*, orders::*};
+use axum::extract::DefaultBodyLimit;
 use config::{Configuration, ConfigurationReader, EnvConfigurationReader};
 use entity::{
     admin::{ActiveModel as AdminActiveModel, Column as AdminColumn, Entity as AdminEntity},
@@ -208,7 +209,8 @@ async fn main() {
         .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
         .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
         .nest("/api", api_router)
-        .layer(CorsLayer::very_permissive())
+        .layer(CorsLayer::permissive())
+        .layer(DefaultBodyLimit::max(10 * 1024 * 1024)) //10 mb
         .with_state(Arc::new(state));
 
     axum::serve(listener, app).await.unwrap();

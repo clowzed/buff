@@ -5,7 +5,7 @@ use crate::{
         currency::Service as CurrencyService,
         orders::{
             CancelOrderParameters, CreateOrderParameters, GetUserOrderParameters,
-            Service as OrderService, SetOrderRequisitesParameters,
+            Service as OrderService,
         },
     },
     state::AppState,
@@ -47,7 +47,7 @@ pub struct Order {
     #[schema(value_type = String)]
     pub fixed_currency_rate: Decimal,
     pub currency_symbol: String,
-    pub requisites: Option<String>,
+    pub requisites: String,
     pub finished_at: Option<DateTime>,
 }
 
@@ -256,54 +256,6 @@ pub async fn get_order(
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug)]
-pub struct SetRequisitesRequest {
-    pub requisites: Option<String>,
-}
-#[utoipa::path(
-    patch,
-    path = "/api/user/order/{id}/requisites",
-    request_body = SetRequisitesRequest,
-    responses(
-        (status = 204, description = "Requisites were successfully set"),
-        (status = 404, description = "Order was not found", body = Details),
-        (status = 401, description = "Unauthorized", body = Details),
-        (status = 500, description = "Internal Server Error", body = Details),
-    ),
-    params(
-        ("id" = i64, Path, description = "Order id")
-    ),
-    security(
-        ("jwt_user" = [])
-    )
-)]
-#[tracing::instrument(skip(app_state))]
-pub async fn set_requisites(
-    AuthJWT(user): AuthJWT,
-    State(app_state): State<Arc<AppState>>,
-    Path(order_id): Path<i64>,
-    Json(payload): Json<SetRequisitesRequest>,
-) -> Response {
-    match app_state.database_connection().begin().await {
-        Ok(transaction) => {
-            let parameters = SetOrderRequisitesParameters {
-                steam_id: user.steam_id,
-                order_id,
-                requisites: payload.requisites,
-            };
-
-            if let Err(cause) = OrderService::set_requisites(parameters, &transaction).await {
-                return Into::<AppError>::into(cause).into_response();
-            }
-            if let Err(cause) = transaction.commit().await {
-                return AppError::InternalServerError(Box::new(cause)).into_response();
-            }
-            (StatusCode::NO_CONTENT).into_response()
-        }
-        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
-    }
-}
-
 #[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema, IntoParams)]
 pub struct TimeBounds {
     start_datetime: NaiveDateTime,
@@ -357,6 +309,5 @@ pub fn router() -> axum::Router<Arc<AppState>> {
         .route("/", get(list_orders))
         .route("/:id", get(get_order))
         .route("/live", get(live::websocket_handler))
-        .route("/:id/requisites", patch(set_requisites))
         .route("/all-in-period", post(all_in_period))
 }

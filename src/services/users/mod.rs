@@ -2,10 +2,10 @@ use entity::user::{
     ActiveModel as UserActiveModel, Column as UserColumn, Entity as UserEntity, Model as UserModel,
 };
 
-use migration::{Alias, Query, SimpleExpr};
+use migration::{Alias, Func, Query, SimpleExpr};
 use sea_orm::{
-    prelude::*, Condition, FromQueryResult, JoinType, Order, QueryOrder, QuerySelect, Set,
-    TransactionTrait,
+    prelude::*, Condition, FromQueryResult, IntoSimpleExpr, JoinType, Order, QueryOrder,
+    QuerySelect, Set, TransactionTrait,
 };
 
 use crate::errors::AppError;
@@ -120,7 +120,13 @@ impl Service {
         Ok(UserEntity::find()
             .select_only()
             .column(entity::user::Column::SteamId)
-            .column_as(entity::order::Column::Amount.sum(), "amount")
+            .column_as(
+                Expr::value(Func::coalesce([
+                    entity::order::Column::Amount.sum(),
+                    Expr::val(0).into_simple_expr(),
+                ])),
+                "amount",
+            )
             .filter(
                 Condition::any().add(
                     UserColumn::SteamId.not_in_subquery(

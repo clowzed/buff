@@ -11,8 +11,8 @@ pub struct Model {
     pub id: i64,
     pub payment_method: String,
     pub status: Status,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub requisites: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub requisites: String,
     pub created_at: DateTime,
     pub finished_at: Option<DateTime>,
     pub steam_id: i64,
@@ -30,7 +30,7 @@ pub enum Relation {
         from = "Column::ModeratorId",
         to = "super::admin::Column::Id",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "SetNull"
     )]
     Admin,
     #[sea_orm(has_many = "super::chat::Entity")]

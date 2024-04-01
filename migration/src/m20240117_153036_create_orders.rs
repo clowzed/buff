@@ -39,7 +39,7 @@ impl MigrationTrait for Migration {
                             )
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Order::Requisites).text())
+                    .col(ColumnDef::new(Order::Requisites).text().not_null())
                     .col(
                         ColumnDef::new(Order::CreatedAt)
                             .date_time()

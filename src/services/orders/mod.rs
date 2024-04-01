@@ -241,31 +241,4 @@ impl Service {
             .all(connection)
             .await?)
     }
-
-    pub async fn set_requisites<T>(
-        parameters: SetOrderRequisitesParameters,
-        connection: &T,
-    ) -> Result<(), ServiceError>
-    where
-        T: ConnectionTrait + TransactionTrait,
-    {
-        let order = match OrderEntity::find()
-            .filter(
-                OrderColumn::SteamId
-                    .eq(parameters.steam_id)
-                    .and(OrderColumn::Id.eq(parameters.order_id)),
-            )
-            .one(connection)
-            .await?
-        {
-            Some(order) => Ok(order),
-            None => Err(ServiceError::OrderNotFound),
-        }?;
-
-        let mut order_to_be_changed: OrderActiveModel = order.into();
-
-        order_to_be_changed.requisites = Set(parameters.requisites);
-        order_to_be_changed.update(connection).await?;
-        Ok(())
-    }
 }

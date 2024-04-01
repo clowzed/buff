@@ -259,7 +259,11 @@ impl Service {
             None => Err(ServiceError::AdminNotFound),
         }?;
 
-        Ok(moderator.find_related(OrderEntity).all(connection).await?)
+        Ok(moderator
+            .find_related(OrderEntity)
+            .order_by_desc(OrderColumn::CreatedAt)
+            .all(connection)
+            .await?)
     }
 
     pub async fn unassigned_orders<T>(connection: &T) -> Result<Vec<OrderModel>, ServiceError>
