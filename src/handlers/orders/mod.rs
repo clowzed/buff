@@ -35,7 +35,7 @@ pub struct CreateOrderRequest {
     #[schema(value_type = String)]
     amount: Decimal,
     currency: String,
-    requisites: String,
+    requisites_id: String,
 }
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize)]
@@ -51,7 +51,7 @@ pub struct Order {
     #[schema(value_type = String)]
     pub fixed_currency_rate: Decimal,
     pub currency_symbol: String,
-    pub requisites: String,
+    pub requisites_id: String,
     pub finished_at: Option<DateTime>,
 }
 
@@ -68,7 +68,7 @@ impl From<OrderModel> for Order {
             fixed_currency_rate: value.fixed_currency_rate,
             currency_symbol: value.currency_symbol,
             finished_at: value.finished_at,
-            requisites: value.requisites,
+            requisites_id: value.requisites_id.to_string(),
         }
     }
 }
@@ -94,6 +94,13 @@ pub async fn create_order(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<CreateOrderRequest>,
 ) -> Response {
+    let requisites_id = match payload.requisites_id.parse::<i64>() {
+        Ok(id) => id,
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
+
     match app_state.database_connection().begin().await {
         Ok(transaction) => {
             let currency_rate =
@@ -108,7 +115,7 @@ pub async fn create_order(
                 payment_method: payload.payment_method,
                 symbol: currency_rate.symbol,
                 currency_rate: currency_rate.rate,
-                requisites: payload.requisites,
+                requisites_id,
             };
 
             let created_order_model =

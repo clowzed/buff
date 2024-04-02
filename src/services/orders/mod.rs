@@ -7,6 +7,7 @@ use entity::{
         ActiveModel as OrderActiveModel, Column as OrderColumn, Entity as OrderEntity,
         Model as OrderModel,
     },
+    requisites::Entity as RequisitesEntity,
     sea_orm_active_enums::{Role, Status},
 };
 use migration::Alias;
@@ -29,6 +30,8 @@ pub enum ServiceError {
     OrderAlreadySucceeded,
     #[error("Order has already been marked as canceled")]
     OrderAlreadyCanceled,
+    #[error("Requisites were not found by id")]
+    RequisitesNotFound,
 }
 
 impl From<ServiceError> for AppError {
@@ -38,6 +41,7 @@ impl From<ServiceError> for AppError {
             ServiceError::OrderNotFound => AppError::OrderWasNotFound,
             ServiceError::OrderAlreadySucceeded => AppError::OrderAlreadySucceeded,
             ServiceError::OrderAlreadyCanceled => AppError::OrderAlreadyCanceled,
+            ServiceError::RequisitesNotFound => AppError::RequisitesWereNotFound,
         }
     }
 }
@@ -49,7 +53,7 @@ pub struct CreateOrderParameters {
     pub amount: Decimal,
     pub symbol: String,
     pub currency_rate: Decimal,
-    pub requisites: String,
+    pub requisites_id: i64,
 }
 
 #[derive(Debug)]
@@ -101,6 +105,14 @@ impl Service {
             .await?
             .map(|moderator| moderator.id);
 
+        let requisites = match RequisitesEntity::find_by_id(params.requisites_id)
+            .one(connection)
+            .await?
+        {
+            Some(r) => r,
+            None => return Err(ServiceError::RequisitesNotFound),
+        };
+
         let order_to_be_inserted = OrderActiveModel {
             steam_id: Set(params.steam_id),
             payment_method: Set(params.payment_method),
@@ -109,7 +121,7 @@ impl Service {
             currency_symbol: Set(params.symbol),
             fixed_currency_rate: Set(params.currency_rate),
             moderator_id: Set(moderator),
-            requisites: Set(params.requisites),
+            requisites_id: Set(requisites.id),
             ..Default::default()
         };
 

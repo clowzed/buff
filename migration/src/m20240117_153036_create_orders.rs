@@ -1,5 +1,6 @@
 use crate::{
-    m20240116_115527_create_users::User, m20240116_141203_create_admins::Admin, sea_orm::EnumIter,
+    m20240116_115527_create_users::User, m20240116_141203_create_admins::Admin,
+    m20240129_121009_create_requisites::Requisites, sea_orm::EnumIter,
 };
 use sea_orm_migration::{prelude::*, sea_orm::Iterable, sea_query::extension::postgres::Type};
 
@@ -44,7 +45,18 @@ impl MigrationTrait for Migration {
                             )
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Order::Requisites).text().not_null())
+                    .col(
+                        ColumnDef::new(Order::RequisitesId)
+                            .big_unsigned()
+                            .not_null(),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("FK_order_requsites")
+                            .from(Order::Table, Order::SteamId)
+                            .to(Requisites::Table, Requisites::Id)
+                            .on_delete(ForeignKeyAction::SetNull),
+                    )
                     .col(
                         ColumnDef::new(Order::CreatedAt)
                             .date_time()
@@ -99,7 +111,7 @@ pub enum Order {
     Amount,
     FinishedAt,
     FixedCurrencyRate,
-    Requisites,
+    RequisitesId,
     CurrencySymbol,
 }
 

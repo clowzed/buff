@@ -11,8 +11,7 @@ pub struct Model {
     pub id: i64,
     pub payment_method: String,
     pub status: Status,
-    #[sea_orm(column_type = "Text")]
-    pub requisites: String,
+    pub requisites_id: i64,
     pub created_at: DateTime,
     pub finished_at: Option<DateTime>,
     pub steam_id: i64,
@@ -36,6 +35,14 @@ pub enum Relation {
     #[sea_orm(has_many = "super::chat::Entity")]
     Chat,
     #[sea_orm(
+        belongs_to = "super::requisites::Entity",
+        from = "Column::SteamId",
+        to = "super::requisites::Column::Id",
+        on_update = "NoAction",
+        on_delete = "SetNull"
+    )]
+    Requisites,
+    #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::SteamId",
         to = "super::user::Column::SteamId",
@@ -54,6 +61,12 @@ impl Related<super::admin::Entity> for Entity {
 impl Related<super::chat::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Chat.def()
+    }
+}
+
+impl Related<super::requisites::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Requisites.def()
     }
 }
 
