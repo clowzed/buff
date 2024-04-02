@@ -26,6 +26,8 @@ pub enum Status {
     Cancelled,
     #[sea_orm(string_value = "created")]
     Created,
+    #[sea_orm(string_value = "maybepayed")]
+    Maybepayed,
     #[sea_orm(string_value = "succeeded")]
     Succeeded,
 }

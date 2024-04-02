@@ -139,9 +139,11 @@ impl Service {
                     OrderEntity::update_many()
                         .col_expr(OrderColumn::ModeratorId, Expr::value::<Option<i64>>(None))
                         .filter(
-                            OrderColumn::ModeratorId
-                                .eq(moderator_id)
-                                .and(OrderColumn::Status.eq(Status::Created)),
+                            OrderColumn::ModeratorId.eq(moderator_id).and(
+                                OrderColumn::Status
+                                    .eq(Status::Created)
+                                    .or(OrderColumn::Status.eq(Status::Maybepayed)),
+                            ),
                         )
                         .exec(connection)
                         .await?;

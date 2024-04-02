@@ -49,6 +49,7 @@ pub struct CreateOrderParameters {
     pub amount: Decimal,
     pub symbol: String,
     pub currency_rate: Decimal,
+    pub requisites: String,
 }
 
 #[derive(Debug)]
@@ -57,6 +58,11 @@ pub struct CancelOrderParameters {
     pub order_id: i64,
 }
 
+#[derive(Debug)]
+pub struct MayBePayedOrderParameters {
+    pub steam_id: i64,
+    pub order_id: i64,
+}
 #[derive(Debug)]
 pub struct GetUserOrderParameters {
     pub steam_id: i64,
@@ -103,6 +109,7 @@ impl Service {
             currency_symbol: Set(params.symbol),
             fixed_currency_rate: Set(params.currency_rate),
             moderator_id: Set(moderator),
+            requisites: Set(params.requisites),
             ..Default::default()
         };
 
@@ -240,5 +247,44 @@ impl Service {
             .order_by_desc(OrderColumn::FinishedAt)
             .all(connection)
             .await?)
+    }
+
+    #[tracing::instrument(skip(connection))]
+    pub async fn maybepayed<T>(
+        parameters: impl Into<MayBePayedOrderParameters> + Debug,
+        connection: &T,
+    ) -> Result<OrderModel, ServiceError>
+    where
+        T: ConnectionTrait + TransactionTrait,
+    {
+        let params = parameters.into();
+
+        match OrderEntity::find()
+            .filter(
+                OrderColumn::SteamId
+                    .eq(params.steam_id)
+                    .and(OrderColumn::Id.eq(params.order_id)),
+            )
+            .one(connection)
+            .await?
+        {
+            Some(order) => match order.status {
+                Status::Succeeded => Err(ServiceError::OrderAlreadySucceeded),
+                Status::Cancelled => Err(ServiceError::OrderAlreadyCanceled),
+                Status::Maybepayed => Ok(order),
+                _ => {
+                    let mut order_to_be_changed: OrderActiveModel = order.into();
+                    order_to_be_changed.status = Set(Status::Maybepayed);
+
+                    let updated = order_to_be_changed
+                        .save(connection)
+                        .await?
+                        .try_into_model()
+                        .unwrap(); // Trust
+                    Ok(updated)
+                }
+            },
+            None => Err(ServiceError::OrderNotFound),
+        }
     }
 }

@@ -1,4 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
+use sea_orm::DbErr;
 use std::{
     error::Error,
     fmt::{Debug, Display},
@@ -45,6 +46,8 @@ pub enum AppError {
     ParseError(#[from] ParseIntError),
     #[error(transparent)]
     ChatServiceError(#[from] ServiceError),
+    #[error(transparent)]
+    DbErr(#[from] DbErr),
 }
 
 impl Display for AppError {
@@ -107,6 +110,7 @@ impl Debug for AppError {
             AppError::NameWasNotFound => write!(f, "Name was not found"),
             AppError::ChatServiceError(error) => write!(f, "{}", error),
             AppError::ParseError(error) => write!(f, "Failed to parse string to number. {}", error),
+            AppError::DbErr(error) => write!(f, "{}", error),
         }
     }
 }
@@ -165,6 +169,7 @@ impl From<&AppError> for StatusCode {
             AppError::NameWasNotFound => StatusCode::NOT_FOUND,
             AppError::ChatServiceError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::ParseError(_) => StatusCode::BAD_REQUEST,
+            AppError::DbErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

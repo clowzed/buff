@@ -2,13 +2,15 @@ use crate::{
     errors::AppError,
     extractors::user_jwt::AuthJWT,
     services::{
+        chat::{SendMessageParameters, Sender, Service as ChatService},
         currency::Service as CurrencyService,
         orders::{
             CancelOrderParameters, CreateOrderParameters, GetUserOrderParameters,
-            Service as OrderService,
+            MayBePayedOrderParameters, Service as OrderService,
         },
     },
     state::AppState,
+    Message, SendMessageResponse,
 };
 use axum::{
     extract::{Path, State},
@@ -19,8 +21,9 @@ use axum::{
 };
 use chrono::NaiveDateTime as DateTime;
 use chrono::NaiveDateTime;
-use entity::order::Model as OrderModel;
-use sea_orm::{prelude::Decimal, TransactionTrait};
+use entity::{chat::Entity as ChatEntity, order::Model as OrderModel};
+use redis::AsyncCommands;
+use sea_orm::{prelude::Decimal, ModelTrait, TransactionTrait};
 use std::sync::Arc;
 use utoipa::{IntoParams, ToSchema};
 
@@ -32,6 +35,7 @@ pub struct CreateOrderRequest {
     #[schema(value_type = String)]
     amount: Decimal,
     currency: String,
+    requisites: String,
 }
 
 #[derive(ToSchema, serde::Serialize, serde::Deserialize)]
@@ -104,6 +108,7 @@ pub async fn create_order(
                 payment_method: payload.payment_method,
                 symbol: currency_rate.symbol,
                 currency_rate: currency_rate.rate,
+                requisites: payload.requisites,
             };
 
             let created_order_model =
@@ -158,6 +163,88 @@ pub async fn cancel_order(
 
             match OrderService::cancel_order(parameters, &transaction).await {
                 Ok(()) => {
+                    if let Err(cause) = transaction.commit().await {
+                        return AppError::InternalServerError(Box::new(cause)).into_response();
+                    }
+                    StatusCode::NO_CONTENT.into_response()
+                }
+                Err(cause) => Into::<AppError>::into(cause).into_response(),
+            }
+        }
+        Err(cause) => AppError::InternalServerError(Box::new(cause)).into_response(),
+    }
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/user/order/{id}/maybepayed",
+    responses(
+        (status = 204, description = "Order was successfully set to maybepayed"),
+        (status = 404, description = "Order was not found", body = Details),
+        (status = 401, description = "Unauthorized", body = Details),
+        (status = 400, description = "Order has already been marked as succeeded or canceled", body = Details),
+        (status = 500, description = "Internal Server Error", body = Details),
+    ),
+    params(
+        ("id" = i64, Path, description = "Order id")
+    ),
+    security(
+        ("jwt_user" = [])
+    )
+)]
+#[tracing::instrument(skip(app_state))]
+pub async fn set_order_maybepayed(
+    AuthJWT(user): AuthJWT,
+    State(app_state): State<Arc<AppState>>,
+    Path(order_id): Path<i64>,
+) -> Response {
+    match app_state.database_connection().begin().await {
+        Ok(transaction) => {
+            let parameters = MayBePayedOrderParameters {
+                steam_id: user.steam_id,
+                order_id,
+            };
+            match OrderService::maybepayed(parameters, &transaction).await {
+                Ok(order) => {
+                    match order.find_related(ChatEntity).one(&transaction).await {
+                        Ok(Some(chat)) => {
+                            let params = SendMessageParameters {
+                                folder: app_state.configuration().upload_folder().clone(),
+                                chat_id: chat.id,
+                                sender: Sender::Moderator,
+                                text: String::from("automessage-payed"), // This will be parsed by frontend to a normal message of moderator
+                                image: None,
+                            };
+
+                            match ChatService::send_message(params, &transaction).await {
+                                Ok(res) => {
+                                    let send = SendMessageResponse {
+                                        message: Into::<Message>::into(res.0),
+                                        images_ids: vec![], // No images in automessage
+                                    };
+
+                                    match app_state.redis_client().get_async_connection().await {
+                                        Ok(mut connection) => {
+                                            let _: Result<(), _> = connection
+                                                .publish(
+                                                    format!("chat-{}", chat.id),
+                                                    serde_json::to_string(&send).unwrap(),
+                                                )
+                                                .await;
+                                        }
+                                        Err(cause) => {
+                                            // Not very important
+                                            tracing::warn!(%cause, "Failed to connect to redis!");
+                                        }
+                                    };
+                                }
+                                Err(cause) => return Into::<AppError>::into(cause).into_response(),
+                            };
+                        }
+                        Ok(None) => {}
+                        Err(cause) => return Into::<AppError>::into(cause).into_response(),
+                    };
+
                     if let Err(cause) = transaction.commit().await {
                         return AppError::InternalServerError(Box::new(cause)).into_response();
                     }
@@ -306,6 +393,7 @@ pub fn router() -> axum::Router<Arc<AppState>> {
     axum::Router::new()
         .route("/", post(create_order))
         .route("/:id/cancel", patch(cancel_order))
+        .route("/:id/maybepayed", patch(set_order_maybepayed))
         .route("/", get(list_orders))
         .route("/:id", get(get_order))
         .route("/live", get(live::websocket_handler))

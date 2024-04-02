@@ -35,7 +35,12 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Order::Status)
                             .enumeration(
                                 Status::Enum,
-                                [Status::Cancelled, Status::Created, Status::Succeeded],
+                                [
+                                    Status::Cancelled,
+                                    Status::Created,
+                                    Status::Succeeded,
+                                    Status::MayBePayed,
+                                ],
                             )
                             .not_null(),
                     )
@@ -104,6 +109,8 @@ enum Status {
     Enum,
     #[iden = "created"]
     Created,
+    #[iden = "maybepayed"]
+    MayBePayed,
     #[iden = "cancelled"]
     Cancelled,
     #[iden = "succeeded"]
