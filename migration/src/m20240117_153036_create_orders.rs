@@ -53,7 +53,7 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("FK_order_requsites")
-                            .from(Order::Table, Order::SteamId)
+                            .from(Order::Table, Order::RequisitesId)
                             .to(Requisites::Table, Requisites::Id)
                             .on_delete(ForeignKeyAction::SetNull),
                     )

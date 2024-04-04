@@ -36,7 +36,7 @@ pub enum Relation {
     Chat,
     #[sea_orm(
         belongs_to = "super::requisites::Entity",
-        from = "Column::SteamId",
+        from = "Column::RequisitesId",
         to = "super::requisites::Column::Id",
         on_update = "NoAction",
         on_delete = "SetNull"
