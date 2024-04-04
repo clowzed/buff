@@ -1,4 +1,4 @@
-use crate::state::AppState;
+use crate::{state::AppState, Order};
 use axum::{
     extract::{
         ws::{Message, WebSocket},
@@ -40,7 +40,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         pubsub.subscribe("live_orders").await.unwrap();
 
         for order in orders_to_send {
-            tx.send(serde_json::to_string(&order).unwrap_or_default())
+            tx.send(serde_json::to_string(&Into::<Order>::into(order)).unwrap_or_default())
                 .await
                 .ok();
         }
