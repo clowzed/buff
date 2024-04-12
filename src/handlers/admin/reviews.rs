@@ -1,6 +1,6 @@
 use crate::{
     errors::AppError,
-    extractors::admin_jwt::AdminAuthJWT,
+    extractors::admin_jwt::{AdminAuthJWT, ModeratorAuthJWT},
     services::reviews::{
         AddVideoReviewParameters, Service as ReviewsService, UpdateVideoReviewParameters,
     },
@@ -162,7 +162,7 @@ pub struct RemoveReviewRequest {
 )]
 #[tracing::instrument(skip(app_state))]
 pub async fn remove_review(
-    AdminAuthJWT(user): AdminAuthJWT,
+    ModeratorAuthJWT(moderator): ModeratorAuthJWT,
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<RemoveVideoReviewRequest>,
 ) -> Response {

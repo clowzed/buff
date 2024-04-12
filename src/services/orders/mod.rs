@@ -99,7 +99,7 @@ impl Service {
                 Alias::new("a"),
             )
             .group_by(AdminColumn::Id)
-            .order_by_asc(AdminColumn::Id.count())
+            .order_by_asc(OrderColumn::Id.count())
             .limit(1)
             .one(connection)
             .await?
