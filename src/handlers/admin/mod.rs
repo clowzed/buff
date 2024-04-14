@@ -48,6 +48,10 @@ pub fn router() -> axum::Router<Arc<AppState>> {
             "/moderator/chat/:id/message",
             post(moderators::send_message),
         )
+        .route(
+            "/moderator/order/:id/chat/history",
+            get(moderators::chat_history_admin),
+        )
         .route("/moderator/chat/:id/history", get(moderators::history))
         .route("/moderator/chat/:id", get(moderators::websocket_handler))
         .route("/moderator/chat/:id/image/:id", get(moderators::image))

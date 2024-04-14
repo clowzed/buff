@@ -101,7 +101,7 @@ pub async fn unblacklist_user(
     get,
     path = "/api/admin/blacklist",
     responses(
-        (status = 200, description = "Blacklist was successfully retrieved", body = [i64]),
+        (status = 200, description = "Blacklist was successfully retrieved", body = [String]),
         (status = 401, description = "Unauthorized",                         body = Details),
         (status = 500, description = "Internal Server Error",                body = Details),
     ),
@@ -115,7 +115,7 @@ pub async fn full_blacklist(
     State(app_state): State<Arc<AppState>>,
 ) -> Response {
     match BlacklistService::all(app_state.database_connection()).await {
-        Ok(ids) => Json(ids).into_response(),
+        Ok(ids) => Json(ids.iter().map(|id| id.to_string()).collect::<Vec<_>>()).into_response(),
         Err(error) => Into::<AppError>::into(error).into_response(),
     }
 }

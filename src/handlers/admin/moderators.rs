@@ -21,13 +21,13 @@ use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 use chrono::NaiveDateTime as DateTime;
 use entity::{
     admin::{Entity as AdminEntity, Model as AdminModel},
-    chat::{Entity as ChatEntity, Model as ChatModel},
+    chat::{Column as ChatColumn, Entity as ChatEntity, Model as ChatModel},
     image::{Entity as ImageEntity, Model as ImageModel},
     message::{Entity as MessageEntity, Model as MessageModel},
 };
 
 use redis::AsyncCommands;
-use sea_orm::{EntityTrait, TransactionTrait};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio_util::io::ReaderStream;
@@ -518,6 +518,45 @@ pub async fn chat(
     match ChatService::chat(params, app_state.database_connection()).await {
         Ok(chat) => Json(Into::<ChatResponse>::into(chat)).into_response(),
         Err(cause) => Into::<AppError>::into(cause).into_response(),
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/admin/moderator/order/{id}/chat/history",
+    responses(
+        (status = 200, description = "Chat was successfully retrieved",    body = ChatHistory),
+        (status = 404, description = "Chat was not found",                 body = Details),
+        (status = 401, description = "Unauthorized",                       body = Details),
+        (status = 500, description = "Internal server error",              body = Details),
+    ),
+    params(("id" = i64, Path, description = "Order id")),
+    security(
+        ("jwt_admin" = [])
+    )
+)]
+pub async fn chat_history_admin(
+    State(app_state): State<Arc<AppState>>,
+    AdminAuthJWT(_admin): AdminAuthJWT,
+    Path(order_id): Path<i64>,
+) -> Response {
+    let chat = match ChatEntity::find()
+        .filter(ChatColumn::OrderId.eq(order_id))
+        .one(app_state.database_connection())
+        .await
+    {
+        Ok(Some(chat)) => chat,
+        Ok(None) => {
+            return AppError::ChatWasNotFound.into_response();
+        }
+        Err(cause) => {
+            return Into::<AppError>::into(cause).into_response();
+        }
+    };
+
+    match ChatService::history(chat.id, app_state.database_connection()).await {
+        Ok(res) => Json(Into::<ChatHistory>::into(res)).into_response(),
+        Err(cause) => return Into::<AppError>::into(cause).into_response(),
     }
 }
 

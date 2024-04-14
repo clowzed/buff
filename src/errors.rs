@@ -49,6 +49,7 @@ pub enum AppError {
     #[error(transparent)]
     DbErr(#[from] DbErr),
     RequisitesWereNotFound,
+    ChatWasNotFound,
 }
 
 impl Display for AppError {
@@ -113,6 +114,7 @@ impl Debug for AppError {
             AppError::ParseError(error) => write!(f, "Failed to parse string to number. {}", error),
             AppError::DbErr(error) => write!(f, "{}", error),
             AppError::RequisitesWereNotFound => write!(f, "Requisites were not found"),
+            AppError::ChatWasNotFound => write!(f, "Chat was not found"),
         }
     }
 }
@@ -173,6 +175,7 @@ impl From<&AppError> for StatusCode {
             AppError::ParseError(_) => StatusCode::BAD_REQUEST,
             AppError::DbErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::RequisitesWereNotFound => StatusCode::NOT_FOUND,
+            AppError::ChatWasNotFound => StatusCode::NOT_FOUND,
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::errors::AppError;
 
 use chrono::Utc;
 use entity::{
-    admin::{Column as AdminColumn, Entity as AdminEntity, Relation as AdminRelation},
+    admin::{Column as AdminColumn, Entity as AdminEntity},
     order::{
         ActiveModel as OrderActiveModel, Column as OrderColumn, Entity as OrderEntity,
         Model as OrderModel,
@@ -10,8 +10,8 @@ use entity::{
     requisites::Entity as RequisitesEntity,
     sea_orm_active_enums::{Role, Status},
 };
-use migration::Alias;
-use sea_orm::RelationTrait;
+use migration::{Expr, Func};
+use sea_orm::IntoSimpleExpr;
 use sea_orm::{
     prelude::Decimal, ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
     QueryOrder, QuerySelect, Set, TransactionTrait, TryIntoModel,
@@ -93,17 +93,16 @@ impl Service {
 
         let moderator = AdminEntity::find()
             .filter(AdminColumn::Role.eq(Role::Moderator))
-            .join_as(
-                sea_orm::JoinType::LeftJoin,
-                AdminRelation::Order.def(),
-                Alias::new("a"),
-            )
+            .left_join(OrderEntity)
             .group_by(AdminColumn::Id)
-            .order_by_asc(OrderColumn::Id.count())
+            .order_by_asc(Expr::value(Func::coalesce([
+                OrderColumn::Id.count(),
+                Expr::val(0).into_simple_expr(),
+            ])))
             .limit(1)
             .one(connection)
             .await?
-            .map(|moderator| moderator.id);
+            .map(|admin| admin.id);
 
         let requisites = match RequisitesEntity::find_by_id(params.requisites_id)
             .one(connection)
