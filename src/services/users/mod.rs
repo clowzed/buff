@@ -1,5 +1,9 @@
-use entity::user::{
-    ActiveModel as UserActiveModel, Column as UserColumn, Entity as UserEntity, Model as UserModel,
+use entity::{
+    sea_orm_active_enums::Status,
+    user::{
+        ActiveModel as UserActiveModel, Column as UserColumn, Entity as UserEntity,
+        Model as UserModel,
+    },
 };
 
 use migration::{Alias, Func, Query, SimpleExpr};
@@ -142,6 +146,7 @@ impl Service {
                 entity::user::Relation::Order.def(),
                 Alias::new("order"),
             )
+            .filter(entity::order::Column::Status.eq(Status::Succeeded))
             .group_by(UserColumn::SteamId)
             .order_by(SimpleExpr::Custom("amount".to_owned()), Order::Desc)
             .offset(Some(offset))
@@ -168,7 +173,6 @@ impl Service {
     where
         T: TransactionTrait + ConnectionTrait,
     {
-        tracing::info!("!!!");
         match UserEntity::find_by_id(steam_id).one(connection).await? {
             Some(user) => Ok(user.avatar_url),
             None => Err(ServiceError::UserWasNotFound(steam_id)),
