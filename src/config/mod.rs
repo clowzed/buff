@@ -14,6 +14,7 @@ pub struct Configuration {
     realm: String,
     upload_folder: PathBuf,
     jwt_ttl: i64,
+    new_orders_channel_name: String,
 }
 
 impl Configuration {
@@ -48,9 +49,13 @@ impl Configuration {
     pub fn upload_folder(&self) -> &PathBuf {
         &self.upload_folder
     }
-    
+
     pub fn jwt_ttl(&self) -> i64 {
         self.jwt_ttl
+    }
+
+    pub fn new_orders_channel_name(&self) -> &str {
+        &self.new_orders_channel_name
     }
 }
 

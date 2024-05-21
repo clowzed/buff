@@ -74,8 +74,7 @@ pub struct GenerateUserJwtParameters<'a> {
 pub struct GenerateAdminJwtParameters<'a> {
     pub admin_id: i64,
     pub secret: &'a str,
-    pub ttl: i64
-
+    pub ttl: i64,
 }
 
 pub struct ResetPasswordParameters<'a> {

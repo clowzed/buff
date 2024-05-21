@@ -73,6 +73,37 @@ async fn main() {
         }
     };
 
+    //? I will leave it here for testing notifications
+    /*
+    let cloned_redis = redis_client.clone();
+    tokio::spawn(async move {
+        let mut connection = cloned_redis.get_async_connection().await.unwrap();
+        loop {
+            let order = OrderModel {
+                id: 1,
+                payment_method: "СБП".to_owned(),
+                status: entity::sea_orm_active_enums::Status::Created,
+                requisites_id: 1,
+                created_at: Default::default(),
+                finished_at: None,
+                steam_id: 1234565,
+                moderator_id: Some(1),
+                amount: Decimal::new(3141, 3),
+                fixed_currency_rate: Decimal::new(3141, 3),
+                currency_symbol: "R".to_owned(),
+            };
+
+            let _: Result<(), _> = connection
+                .publish(
+                    "new_orders_notifications",
+                    serde_json::to_string(&order).unwrap(),
+                )
+                .await;
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+    }); */
+
     //* Getting database connection and running migrations
     let mut opt = ConnectOptions::new(configuration.database_url());
     opt.sqlx_logging(configuration.sqlx_logging());

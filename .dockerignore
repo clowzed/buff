@@ -2,3 +2,5 @@ target
 .gitignore
 Dockerfile
 .env
+/buff-notifications/target
+uploads

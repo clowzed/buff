@@ -128,6 +128,21 @@ pub async fn create_order(
                 return AppError::InternalServerError(Box::new(cause)).into_response();
             }
 
+            match app_state.redis_client().get_async_connection().await {
+                Ok(mut connection) => {
+                    let _: Result<(), _> = connection
+                        .publish(
+                            app_state.configuration().new_orders_channel_name(),
+                            serde_json::to_string(&created_order_model).unwrap(),
+                        )
+                        .await;
+                }
+                Err(cause) => {
+                    // Not very important
+                    tracing::warn!(%cause, "Failed to connect to redis!");
+                }
+            };
+
             (
                 StatusCode::CREATED,
                 Json(Into::<Order>::into(created_order_model)),
