@@ -41,6 +41,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: buff-notifications
-          file: Dockerfile
           push: true
           tags: clowzed/buff-notifications:latest
