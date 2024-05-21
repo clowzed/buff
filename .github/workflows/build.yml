@@ -40,7 +40,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./buff-notifications/Dockerfile
+          context: buff-notifications
+          file: Dockerfile
           push: true
           tags: clowzed/buff-notifications:latest
