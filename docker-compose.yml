@@ -35,8 +35,7 @@ services:
     volumes:
       - ./nginx-templates:/etc/nginx/templates
     ports:
-      - 443:443
-      - 80:80
+      - 1234:80
     links:
       - server
 
@@ -54,10 +53,10 @@ services:
        - REDIS_URL=redis://redis:6379
        - PORT=8080
        - STATUS_EXPIRATION_SECONDS=30
-       - REALM=http://127.0.0.1:5173
+       - REALM=https://scrooge-china.com
        - SQLX_LOGGING=true
        - JWT_SECRET=secret
-       - UPLOAD_FOLDER=./uploads
+       - UPLOAD_FOLDER=/app/uploads
        - NEW_ORDERS_CHANNEL_NAME=new_orders_notifications
        - JWT_TTL=60
     volumes:

@@ -109,7 +109,7 @@ impl Service {
     pub fn user_jwt(parameters: GenerateUserJwtParameters<'_>) -> Result<Jwt, ServiceError> {
         let claims: TokenClaims = TokenClaims {
             sub: parameters.steam_id,
-            exp: (Utc::now() + Duration::minutes(60)).timestamp() as u64,
+            exp: (Utc::now() + Duration::minutes(parameters.ttl)).timestamp() as u64,
             iat: Utc::now().timestamp() as u64,
         };
 
@@ -124,7 +124,7 @@ impl Service {
     pub fn admin_jwt(parameters: GenerateAdminJwtParameters<'_>) -> Result<Jwt, ServiceError> {
         let claims: TokenClaims = TokenClaims {
             sub: parameters.admin_id,
-            exp: (Utc::now() + Duration::minutes(60)).timestamp() as u64,
+            exp: (Utc::now() + Duration::minutes(parameters.ttl)).timestamp() as u64,
             iat: Utc::now().timestamp() as u64,
         };
 
